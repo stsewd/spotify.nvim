@@ -2,6 +2,7 @@ import neovim
 
 import os
 import sys
+import time
 
 try:
     from gi.repository import GLib
@@ -20,6 +21,7 @@ SPOTIFY_OPTIONS = [
     ('play', 'Play'),
     ('pause', 'Pause'),
     ('stop', 'Stop'),
+    ('status', '_show_current_status'),
 ]
 
 SPOTIFY_OPTIONS_DICT = dict(SPOTIFY_OPTIONS)
@@ -40,15 +42,26 @@ class SpotifyNvim:
         )
         return proxy
 
-    def _run_main_loop(self):
-        loop = GLib.MainLoop()
-        self.spotify.onPropertiesChanged = lambda x: print(x)
-        loop.run()
+    def _show_status(self, *, status, song, artists):
+        self.nvim.out_write('[{status}] {song} - {artists}\n'.format(
+            status=status,
+            song=song,
+            artists=', '.join(artists)
+        ))
+
+    def _show_current_status(self):
+        data = self.spotify.Metadata
+        song = data.get('xesam:title', 'No Title')
+        artists = data.get('xesam:artist', ['Unknow'])
+        status = self.spotify.PlaybackStatus
+        self._show_status(
+            status=status, song=song, artists=artists
+        )
 
     def error(self, msg):
         self.nvim.err_write('[spotify] {}\n'.format(msg))
 
-    def msg(self, msg):
+    def print(self, msg):
         self.nvim.out_write('[spotify] {}\n'.format(msg))
 
     @neovim.command(
@@ -56,14 +69,18 @@ class SpotifyNvim:
     def spotify_command(self, args):
         attr = SPOTIFY_OPTIONS_DICT.get(args[0])
         if attr:
-            method = getattr(self.spotify, attr)
+            if attr.startswith('_'):
+                method = getattr(self, attr)
+            else:
+                method = getattr(self.spotify, attr)
             if callable(method):
                 method()
+                if not attr.startswith('_'):
+                    # We need to wait to the previous command to get executed
+                    time.sleep(0.1)
+                    self._show_current_status()
                 return
         self.error('Invalid option')
-
-    def _show_current_status(self):
-        pass
 
     @neovim.function('SpotifyCompletions', sync=True)
     def spotify_completions(self, args):
