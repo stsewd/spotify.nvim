@@ -2,11 +2,16 @@ import neovim
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath('/usr/lib/python3.6/site-packages'))
-sys.path.insert(0, os.path.abspath('/usr/lib64/python3.6/site-packages'))
 
-from gi.repository import GLib
-from pydbus import SessionBus
+try:
+    from gi.repository import GLib
+    from pydbus import SessionBus
+except ImportError:
+    sys.path.insert(0, os.path.abspath('/usr/lib/python3.6/site-packages'))
+    sys.path.insert(0, os.path.abspath('/usr/lib64/python3.6/site-packages'))
+    from gi.repository import GLib
+    from pydbus import SessionBus
+
 
 SPOTIFY_OPTIONS = [
     'PlayPause',
