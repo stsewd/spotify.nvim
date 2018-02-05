@@ -47,12 +47,15 @@ def _get_spotify_proxy():
     except Exception:
         return None
 
-    def _show_status(self, *, status, song, artists):
-        self.nvim.out_write('[{status}] {song} - {artists}\n'.format(
-            status=status,
-            song=song,
-            artists=', '.join(artists)
-        ))
+
+@neovim.plugin
+class SpotifyNvim:
+
+    def __init__(self, nvim):
+        self.nvim = nvim
+        self.spotify = None
+        self.show_status = self.nvim.vars.get('spotify_show_status', 1)
+        self.wait_time = self.nvim.vars.get('spotify_wait_time', 0.2)
 
     def _show_current_status(self):
         data = self.spotify.Metadata
@@ -62,6 +65,13 @@ def _get_spotify_proxy():
         self._show_status(
             status=status, song=song, artists=artists
         )
+
+    def _show_status(self, *, status, song, artists):
+        self.nvim.out_write('[{status}] {song} - {artists}\n'.format(
+            status=status,
+            song=song,
+            artists=', '.join(artists)
+        ))
 
     def error(self, msg):
         self.nvim.err_write('[spotify] {}\n'.format(msg))
@@ -81,9 +91,10 @@ def _get_spotify_proxy():
                 method = getattr(self.spotify, attr)
             if callable(method):
                 method()
-                if not attr.startswith('_'):
-                    # We need to wait to the previous command to get executed
-                    time.sleep(0.1)
+                if self.show_status and not attr.startswith('_'):
+                    # We need to wait to the previous
+                    # command to get executed
+                    time.sleep(self.wait_time)
                     self._show_current_status()
                 return
         self.error('Invalid option')
