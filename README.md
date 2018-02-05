@@ -22,11 +22,11 @@ Plug 'stsewd/spotify.nvim', { 'do': ':UpdateRemotePlugins' }
 - Call `:Spotify {option}`. Where option can be:
   - `play/pause`
   - `next`
-  - `prev` 
-  - `play` 
+  - `prev`
+  - `play`
   - `pause`
   - `stop`
-  - `status`: show current song and player status
+  - `status`: show current song and player status.
 
 ## Configuration
 
@@ -41,4 +41,13 @@ _This is needed, since Spotify could return the previous state, no the current o
 
 ```vim
 g:spotify_wait_time = 0.2
+```
+
+## Mappings example
+
+```vim
+nnoremap <C-s>n :Spotify next<CR>
+nnoremap <C-s>p :Spotify prev<CR>
+nnoremap <C-s>s :Spotify play/pause<CR>
+nnoremap <C-s>c :Spotify status<CR>
 ```
