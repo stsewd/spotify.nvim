@@ -26,20 +26,26 @@ SPOTIFY_OPTIONS = [
 SPOTIFY_OPTIONS_DICT = dict(SPOTIFY_OPTIONS)
 
 
-@neovim.plugin
-class SpotifyNvim:
+def setup_spotify(fun):
+    def wrapper(self, *args, **kwargs):
+        self.spotify = _get_spotify_proxy()
+        if not self.spotify:
+            self.error('Spotify is not running')
+            return
+        return fun(self, *args, **kwargs)
+    return wrapper
 
-    def __init__(self, nvim):
-        self.nvim = nvim
-        self.spotify = self._get_spotify_proxy()
 
-    def _get_spotify_proxy(self):
-        bus = SessionBus()
+def _get_spotify_proxy():
+    bus = SessionBus()
+    try:
         proxy = bus.get(
             'org.mpris.MediaPlayer2.spotify',
             '/org/mpris/MediaPlayer2'
         )
         return proxy
+    except Exception:
+        return None
 
     def _show_status(self, *, status, song, artists):
         self.nvim.out_write('[{status}] {song} - {artists}\n'.format(
@@ -64,7 +70,8 @@ class SpotifyNvim:
         self.nvim.out_write('[spotify] {}\n'.format(msg))
 
     @neovim.command(
-        'Spotify', nargs='1', complete='customlist,SpotifyCompletions')
+        'Spotify', nargs=1, complete='customlist,SpotifyCompletions')
+    @setup_spotify
     def spotify_command(self, args):
         attr = SPOTIFY_OPTIONS_DICT.get(args[0])
         if attr:
