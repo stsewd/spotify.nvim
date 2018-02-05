@@ -5,7 +5,7 @@ Control Spotify from Neovim
 # Requirements
 
 - Linux operating system (this plugin doesn't work on Windows, and I not sure about Mac).
-- [pydbus](https://github.com/LEW21/pydbus) (see [requiments](https://github.com/LEW21/pydbus#requirements)).
+- [pydbus](https://github.com/LEW21/pydbus) (see [requirements](https://github.com/LEW21/pydbus#requirements)).
 
 ## Install
 
