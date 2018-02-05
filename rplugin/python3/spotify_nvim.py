@@ -14,15 +14,15 @@ except ImportError:
 
 
 SPOTIFY_OPTIONS = [
-    'PlayPause',
-    'Next',
-    'Previous',
-    'Play',
-    'Pause',
-    'Stop',
-    'Shuffle',
-    'Metadata',
+    ('play/pause', 'PlayPause'),
+    ('next', 'Next'),
+    ('prev', 'Previous'),
+    ('play', 'Play'),
+    ('pause', 'Pause'),
+    ('stop', 'Stop'),
 ]
+
+SPOTIFY_OPTIONS_DICT = dict(SPOTIFY_OPTIONS)
 
 
 @neovim.plugin
@@ -45,22 +45,31 @@ class SpotifyNvim:
         self.spotify.onPropertiesChanged = lambda x: print(x)
         loop.run()
 
+    def error(self, msg):
+        self.nvim.err_write('[spotify] {}\n'.format(msg))
+
+    def msg(self, msg):
+        self.nvim.out_write('[spotify] {}\n'.format(msg))
+
     @neovim.command(
         'Spotify', nargs='1', complete='customlist,SpotifyCompletions')
     def spotify_command(self, args):
-        attr = args[0]
-        if hasattr(self.spotify, attr):
+        attr = SPOTIFY_OPTIONS_DICT.get(args[0])
+        if attr:
             method = getattr(self.spotify, attr)
             if callable(method):
                 method()
                 return
-        self.nvim.err_write('[spotify] Invalid option\n')
+        self.error('Invalid option')
+
+    def _show_current_status(self):
+        pass
 
     @neovim.function('SpotifyCompletions', sync=True)
     def spotify_completions(self, args):
         arglead, cmdline, cursorpos, *_ = args
         return [
             option
-            for option in SPOTIFY_OPTIONS
+            for option, action in SPOTIFY_OPTIONS
             if option.lower().startswith(arglead.lower())
         ]
