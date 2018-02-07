@@ -89,15 +89,15 @@ class SpotifyNvim:
                 method = getattr(self, attr)
             else:
                 method = getattr(self.spotify, attr)
-            if callable(method):
-                method()
-                if self.show_status and not attr.startswith('_'):
-                    # We need to wait to the previous
-                    # command to get executed
-                    time.sleep(self.wait_time)
-                    self._show_current_status()
-                return
-        self.error('Invalid option')
+
+            method()
+            if self.show_status and not attr.startswith('_'):
+                # We need to wait to the previous
+                # command to get executed
+                time.sleep(self.wait_time)
+                self._show_current_status()
+        else:
+            self.error('Invalid option')
 
     @neovim.function('SpotifyCompletions', sync=True)
     def spotify_completions(self, args):
