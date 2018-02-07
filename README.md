@@ -51,3 +51,8 @@ nnoremap <C-s>p :Spotify prev<CR>
 nnoremap <C-s>s :Spotify play/pause<CR>
 nnoremap <C-s>c :Spotify status<CR>
 ```
+
+## References
+
+- https://specifications.freedesktop.org/mpris-spec/latest/Player_Interface.html
+- https://github.com/LEW21/pydbus/blob/master/doc/tutorial.rst
