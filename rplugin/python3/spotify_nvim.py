@@ -13,7 +13,7 @@ except ImportError:
     from pydbus import SessionBus
 
 
-SPOTIFY_OPTIONS = [
+OPTIONS = [
     ('play/pause', 'PlayPause'),
     ('next', 'Next'),
     ('prev', 'Previous'),
@@ -23,7 +23,7 @@ SPOTIFY_OPTIONS = [
     ('status', '_show_current_status'),
 ]
 
-SPOTIFY_OPTIONS_DICT = dict(SPOTIFY_OPTIONS)
+OPTIONS_DICT = dict(OPTIONS)
 
 
 def setup_spotify(fun):
@@ -83,7 +83,7 @@ class SpotifyNvim:
         'Spotify', nargs=1, complete='customlist,SpotifyCompletions')
     @setup_spotify
     def spotify_command(self, args):
-        attr = SPOTIFY_OPTIONS_DICT.get(args[0])
+        attr = OPTIONS_DICT.get(args[0])
         if attr:
             if attr.startswith('_'):
                 method = getattr(self, attr)
@@ -104,6 +104,6 @@ class SpotifyNvim:
         arglead, cmdline, cursorpos, *_ = args
         return [
             option
-            for option, action in SPOTIFY_OPTIONS
+            for option, action in OPTIONS
             if option.lower().startswith(arglead.lower())
         ]
