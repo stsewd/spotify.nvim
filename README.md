@@ -1,6 +1,15 @@
 # Spotify.nvim
 
-Control Spotify from Neovim
+Control Spotify from Neovim.
+
+![1](https://user-images.githubusercontent.com/4975310/36114436-055b913e-0ffe-11e8-93ef-37dc9f487852.png)
+![2](https://user-images.githubusercontent.com/4975310/36114434-04f6c1e6-0ffe-11e8-9232-eda34f5e0e65.png)
+![3](https://user-images.githubusercontent.com/4975310/36114432-04d2de0c-0ffe-11e8-97f0-9b1fb287a20b.png)
+![4](https://user-images.githubusercontent.com/4975310/36114431-04a225dc-0ffe-11e8-9085-edc6e60438fe.png)
+![5](https://user-images.githubusercontent.com/4975310/36114430-04811716-0ffe-11e8-8291-4a8bb03a466c.png)
+![6](https://user-images.githubusercontent.com/4975310/36114429-045eb676-0ffe-11e8-86cd-e180dc04b605.png)
+![7](https://user-images.githubusercontent.com/4975310/36114427-043f8e22-0ffe-11e8-9506-cf72f390af1b.png)
+![8](https://user-images.githubusercontent.com/4975310/36114426-04195d60-0ffe-11e8-8e1f-fcbf35ec38fd.png)
 
 ## Requirements
 
@@ -34,13 +43,13 @@ Plug 'stsewd/spotify.nvim', { 'do': ':UpdateRemotePlugins' }
 
 ## Configuration
 
-Show current song and player status after each command.
+### Show current song and player status after each command
 
 ```vim
 g:spotify_show_status = 1
 ```
 
-Choose the style of the symbols in the status.
+### Style of the symbols in the status
 
 Options can be:
 
@@ -52,7 +61,7 @@ Options can be:
 g:spotify_status_style = 'ascii'
 ```
 
-Set the format of the status.
+### Format of the status
 
 The available variables are:
 
@@ -67,7 +76,10 @@ _Note_: this is a python format string.
 g:spotify_status_format = ' {status} {song} - {artists} {decorator}'
 ```
 
+### Wait time
+
 Time in milliseconds to wait to show the player status after each command.
+
 _This is needed, since Spotify could return the previous state, no the current one_.
 
 ```vim
