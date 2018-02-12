@@ -50,7 +50,7 @@ def _get_spotify_proxy():
         return None
 
 
-def get_spotify_pids():
+def _get_spotify_pids():
     command = ['pgrep', 'spotify']
     with Popen(command, stdout=PIPE, stderr=PIPE) as proc:
         output, error = proc.communicate()
@@ -58,7 +58,7 @@ def get_spotify_pids():
     return []
 
 
-def get_window_id(pids):
+def _get_window_id(pids):
     command = [
         'wmctrl',
         '-l',  # list windows
@@ -74,7 +74,7 @@ def get_window_id(pids):
     return None
 
 
-def focus_window(window_id):
+def _focus_window(window_id):
     command = [
         'wmctrl',
         '-i',  # search by id
@@ -111,10 +111,10 @@ class SpotifyNvim:
         ))
 
     def _open_spotify(self):
-        spotify_pids = get_spotify_pids()
-        window_id = get_window_id(spotify_pids)
+        spotify_pids = _get_spotify_pids()
+        window_id = _get_window_id(spotify_pids)
         if window_id:
-            focus_window(window_id)
+            _focus_window(window_id)
         else:
             self.error('Spotify is not running')
 
