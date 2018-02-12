@@ -1,8 +1,9 @@
-import neovim
-
 import os
 import sys
 import time
+from subprocess import PIPE, Popen
+
+import neovim
 
 try:
     from pydbus import SessionBus
@@ -20,6 +21,7 @@ OPTIONS = [
     ('play', 'Play'),
     ('pause', 'Pause'),
     ('stop', 'Stop'),
+    ('open', '_open_spotify'),
     ('status', '_show_current_status'),
 ]
 
@@ -48,6 +50,41 @@ def _get_spotify_proxy():
         return None
 
 
+def get_spotify_pids():
+    command = ['pgrep', 'spotify']
+    with Popen(command, stdout=PIPE, stderr=PIPE) as proc:
+        output, error = proc.communicate()
+        return output.decode().split('\n')
+    return []
+
+
+def get_window_id(pids):
+    command = [
+        'wmctrl',
+        '-l',  # list windows
+        '-p',  # show pids
+    ]
+    with Popen(command, stdout=PIPE, stderr=PIPE) as proc:
+        output, error = proc.communicate()
+        windows = output.decode().split('\n')
+        for window in windows:
+            window_id, workspace, pid, *_ = window.split()
+            if pid in pids:
+                return window_id
+    return None
+
+
+def focus_window(window_id):
+    command = [
+        'wmctrl',
+        '-i',  # search by id
+        '-a',  # search
+        window_id,
+    ]
+    with Popen(command, stderr=PIPE) as proc:
+        output, error = proc.communicate()
+
+
 @neovim.plugin
 class SpotifyNvim:
 
@@ -72,6 +109,14 @@ class SpotifyNvim:
             song=song,
             artists=', '.join(artists)
         ))
+
+    def _open_spotify(self):
+        spotify_pids = get_spotify_pids()
+        window_id = get_window_id(spotify_pids)
+        if window_id:
+            focus_window(window_id)
+        else:
+            self.error('Spotify is not running')
 
     def error(self, msg):
         self.nvim.err_write('[spotify] {}\n'.format(msg))
