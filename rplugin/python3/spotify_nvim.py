@@ -24,8 +24,30 @@ OPTIONS = [
     ('open', '_open_spotify'),
     ('status', '_show_current_status'),
 ]
-
 OPTIONS_DICT = dict(OPTIONS)
+
+SYMBOLS_REPR = {
+    'playing': {
+        'text': '[playing]',
+        'emoji': '▶️',
+        'ascii': '►',
+    },
+    'paused': {
+        'text': '[paused]',
+        'emoji': '⏸️',
+        'ascii': '■',
+    },
+    'stop': {
+        'text': '[stop]',
+        'emoji': '⏸️',
+        'ascii': '■',
+    },
+    'music': {
+        'text': '',
+        'emoji': '🎶',
+        'ascii': '♫♪',
+    }
+}
 
 
 def setup_spotify(fun):
@@ -93,6 +115,7 @@ class SpotifyNvim:
         self.spotify = None
         self.show_status = self.nvim.vars.get('spotify_show_status', 1)
         self.wait_time = self.nvim.vars.get('spotify_wait_time', 0.2)
+        self.status_repr = self.nvim.vars.get('spotify_status_repr', 'ascii')
 
     def _show_current_status(self):
         data = self.spotify.Metadata
@@ -104,11 +127,25 @@ class SpotifyNvim:
         )
 
     def _show_status(self, *, status, song, artists):
-        self.nvim.out_write('[{status}] {song} - {artists}\n'.format(
-            status=status,
+        decorator = ''
+        if status.lower() == 'playing':
+            decorator = self._get_symbol_repr('music')
+        status_format = ' {status} {song} - {artists} {decorator}\n'
+        self.nvim.out_write(status_format.format(
+            status=self._get_symbol_repr(status),
             song=song,
-            artists=', '.join(artists)
+            artists=', '.join(artists),
+            decorator=decorator
         ))
+
+    def _get_symbol_repr(self, symbol):
+        symbol = symbol.lower()
+        repr_ = (
+            SYMBOLS_REPR
+            .get(symbol, {})
+            .get(self.status_repr, '')
+        )
+        return repr_
 
     def _open_spotify(self):
         spotify_pids = _get_spotify_pids()
