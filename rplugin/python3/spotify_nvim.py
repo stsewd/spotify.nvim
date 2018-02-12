@@ -115,7 +115,11 @@ class SpotifyNvim:
         self.spotify = None
         self.show_status = self.nvim.vars.get('spotify_show_status', 1)
         self.wait_time = self.nvim.vars.get('spotify_wait_time', 0.2)
-        self.status_repr = self.nvim.vars.get('spotify_status_repr', 'ascii')
+        self.status_style = self.nvim.vars.get('spotify_status_style', 'ascii')
+        self.status_format = self.nvim.vars.get(
+            'spotify_status_format',
+            '{status} {song} - {artists} {decorator}'
+        )
 
     def _show_current_status(self):
         data = self.spotify.Metadata
@@ -130,7 +134,7 @@ class SpotifyNvim:
         decorator = ''
         if status.lower() == 'playing':
             decorator = self._get_symbol_repr('music')
-        status_format = ' {status} {song} - {artists} {decorator}\n'
+        status_format = self.status_format + '\n'
         self.nvim.out_write(status_format.format(
             status=self._get_symbol_repr(status),
             song=song,
@@ -143,7 +147,7 @@ class SpotifyNvim:
         repr_ = (
             SYMBOLS_REPR
             .get(symbol, {})
-            .get(self.status_repr, '')
+            .get(self.status_style, '')
         )
         return repr_
 

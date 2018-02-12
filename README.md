@@ -40,7 +40,7 @@ Show current song and player status after each command.
 g:spotify_show_status = 1
 ```
 
-Choose the representation of symbols it the status.
+Choose the style of the symbols in the status.
 
 Options can be:
 
@@ -49,7 +49,22 @@ Options can be:
 - `emoji`
 
 ```vim
-g:spotify_status_repr = 'ascii'
+g:spotify_status_style = 'ascii'
+```
+
+Set the format of the status.
+
+The available variables are:
+
+- `status`: the current status (the style is decided by `g:spotify_status_style`).
+- `song`: the current song name.
+- `artists`: comma separated artists.
+- `decorator`: only visible when a song is playing.
+
+_Note_: this is a python format string.
+
+```vim
+g:spotify_status_format = '{status} {song} - {artists} {decorator}'
 ```
 
 Time in milliseconds to wait to show the player status after each command.
