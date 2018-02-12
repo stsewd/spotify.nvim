@@ -29,23 +29,23 @@ OPTIONS_DICT = dict(OPTIONS)
 SYMBOLS_REPR = {
     'playing': {
         'text': '[playing]',
-        'emoji': '▶️',
         'ascii': '►',
+        'emoji': '▶️',
     },
     'paused': {
         'text': '[paused]',
-        'emoji': '⏸️',
         'ascii': '■',
+        'emoji': '⏸️',
     },
     'stop': {
         'text': '[stop]',
-        'emoji': '⏸️',
         'ascii': '■',
+        'emoji': '⏸️',
     },
     'music': {
         'text': '',
-        'emoji': '🎶',
         'ascii': '♫♪',
+        'emoji': '🎶',
     }
 }
 

@@ -40,6 +40,18 @@ Show current song and player status after each command.
 g:spotify_show_status = 1
 ```
 
+Choose the representation of symbols it the status.
+
+Options can be:
+
+- `text`
+- `ascii` (default)
+- `emoji`
+
+```vim
+g:spotify_status_repr = 'ascii'
+```
+
 Time in milliseconds to wait to show the player status after each command.
 _This is needed, since Spotify could return the previous state, no the current one_.
 
