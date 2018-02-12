@@ -43,13 +43,13 @@ Plug 'stsewd/spotify.nvim', { 'do': ':UpdateRemotePlugins' }
 
 ## Configuration
 
-Show current song and player status after each command.
+### Show current song and player status after each command
 
 ```vim
 g:spotify_show_status = 1
 ```
 
-Choose the style of the symbols in the status.
+### Style of the symbols in the status
 
 Options can be:
 
@@ -61,7 +61,7 @@ Options can be:
 g:spotify_status_style = 'ascii'
 ```
 
-Set the format of the status.
+### Format of the status
 
 The available variables are:
 
@@ -76,7 +76,10 @@ _Note_: this is a python format string.
 g:spotify_status_format = ' {status} {song} - {artists} {decorator}'
 ```
 
+### Wait time
+
 Time in milliseconds to wait to show the player status after each command.
+
 _This is needed, since Spotify could return the previous state, no the current one_.
 
 ```vim
