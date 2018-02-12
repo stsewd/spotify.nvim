@@ -118,7 +118,7 @@ class SpotifyNvim:
         self.status_style = self.nvim.vars.get('spotify_status_style', 'ascii')
         self.status_format = self.nvim.vars.get(
             'spotify_status_format',
-            '{status} {song} - {artists} {decorator}'
+            ' {status} {song} - {artists} {decorator}'
         )
 
     def _show_current_status(self):

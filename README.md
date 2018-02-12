@@ -64,7 +64,7 @@ The available variables are:
 _Note_: this is a python format string.
 
 ```vim
-g:spotify_status_format = '{status} {song} - {artists} {decorator}'
+g:spotify_status_format = ' {status} {song} - {artists} {decorator}'
 ```
 
 Time in milliseconds to wait to show the player status after each command.
