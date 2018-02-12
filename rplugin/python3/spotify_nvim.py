@@ -37,8 +37,8 @@ SYMBOLS_REPR = {
         'ascii': '■',
         'emoji': '⏸️',
     },
-    'stop': {
-        'text': '[stop]',
+    'stopped': {
+        'text': '[stopped]',
         'ascii': '■',
         'emoji': '⏸️',
     },
