@@ -52,7 +52,7 @@ SYMBOLS_REPR = {
 
 def setup_spotify(fun):
     def wrapper(self, *args, **kwargs):
-        self.spotify = _get_spotify_proxy()
+        self.spotify = get_spotify_proxy()
         if not self.spotify:
             self.error('Spotify is not running')
             return
@@ -60,7 +60,7 @@ def setup_spotify(fun):
     return wrapper
 
 
-def _get_spotify_proxy():
+def get_spotify_proxy():
     bus = SessionBus()
     try:
         proxy = bus.get(
@@ -72,7 +72,7 @@ def _get_spotify_proxy():
         return None
 
 
-def _get_spotify_pids():
+def get_spotify_pids():
     command = ['pgrep', 'spotify']
     with Popen(command, stdout=PIPE, stderr=PIPE) as proc:
         output, error = proc.communicate()
@@ -80,7 +80,7 @@ def _get_spotify_pids():
     return []
 
 
-def _get_window_id(pids):
+def get_window_id(pids):
     command = [
         'wmctrl',
         '-l',  # list windows
@@ -96,7 +96,7 @@ def _get_window_id(pids):
     return None
 
 
-def _focus_window(window_id):
+def focus_window(window_id):
     command = [
         'wmctrl',
         '-i',  # search by id
@@ -152,10 +152,10 @@ class SpotifyNvim:
         return repr_
 
     def _open_spotify(self):
-        spotify_pids = _get_spotify_pids()
-        window_id = _get_window_id(spotify_pids)
+        spotify_pids = get_spotify_pids()
+        window_id = get_window_id(spotify_pids)
         if window_id:
-            _focus_window(window_id)
+            focus_window(window_id)
         else:
             self.error('Spotify is not running')
 
