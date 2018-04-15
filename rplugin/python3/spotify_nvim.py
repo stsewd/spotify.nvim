@@ -21,7 +21,7 @@ OPTIONS = [
     ('play', 'Play'),
     ('pause', 'Pause'),
     ('stop', 'Stop'),
-    ('open', '_open_spotify'),
+    ('show', '_show_spotify'),
     ('status', '_show_current_status'),
 ]
 OPTIONS_DICT = dict(OPTIONS)
@@ -151,7 +151,7 @@ class SpotifyNvim:
         )
         return repr_
 
-    def _open_spotify(self):
+    def _show_spotify(self):
         spotify_pids = get_spotify_pids()
         window_id = get_window_id(spotify_pids)
         if window_id:

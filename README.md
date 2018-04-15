@@ -15,7 +15,7 @@ Control Spotify from Neovim.
 
 - Linux operating system (this plugin doesn't work on Windows, and I not sure about Mac).
 - [pydbus](https://github.com/LEW21/pydbus) (see [requirements](https://github.com/LEW21/pydbus#requirements)).
-- [wmctrl](https://en.wikipedia.org/wiki/Wmctrl) (optional, required only for `open` command)
+- [wmctrl](https://en.wikipedia.org/wiki/Wmctrl) (optional, required only for `show` command)
     - `sudo apt-get install wmctrl`
     - `sudo dnf install wmctrl`
 
@@ -38,8 +38,8 @@ Plug 'stsewd/spotify.nvim', { 'do': ':UpdateRemotePlugins' }
   - `play`
   - `pause`
   - `stop`
-  - `open`: focus Spotify window.
-  - `status`: show current song and player status.
+  - `show`: focus Spotify window
+  - `status`: show current song and player status
 
 ## Configuration
 
@@ -92,7 +92,7 @@ g:spotify_wait_time = 0.2
 nnoremap <C-s>n :Spotify next<CR>
 nnoremap <C-s>p :Spotify prev<CR>
 nnoremap <C-s>s :Spotify play/pause<CR>
-nnoremap <C-s>o :Spotify open<CR>
+nnoremap <C-s>o :Spotify show<CR>
 nnoremap <C-s>c :Spotify status<CR>
 ```
 
