@@ -152,12 +152,15 @@ class SpotifyNvim:
         return repr_
 
     def _show_spotify(self):
-        spotify_pids = get_spotify_pids()
-        window_id = get_window_id(spotify_pids)
-        if window_id:
-            focus_window(window_id)
-        else:
-            self.error('Spotify is not running')
+        try:
+            spotify_pids = get_spotify_pids()
+            window_id = get_window_id(spotify_pids)
+            if window_id:
+                focus_window(window_id)
+            else:
+                self.error('Spotify is not running')
+        except Exception as e:
+            self.error('You need to install wmctrl to use this feature')
 
     def error(self, msg):
         self.nvim.err_write('[spotify] {}\n'.format(msg))
