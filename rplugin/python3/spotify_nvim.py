@@ -9,8 +9,8 @@ try:
     from pydbus import SessionBus
 except ImportError:
     # Try to import from python system packages
-    sys.path.insert(0, os.path.abspath('/usr/lib/python3.6/site-packages'))
-    sys.path.insert(0, os.path.abspath('/usr/lib64/python3.6/site-packages'))
+    sys.path.insert(0, os.path.abspath('/usr/lib/python3.7/site-packages'))
+    sys.path.insert(0, os.path.abspath('/usr/lib64/python3.7/site-packages'))
     from pydbus import SessionBus
 
 
