@@ -88,7 +88,11 @@ def get_window_id(pids):
     ]
     with Popen(command, stdout=PIPE, stderr=PIPE) as proc:
         output, error = proc.communicate()
-        windows = output.decode().split('\n')
+        windows = (
+            window
+            for window in output.decode().split('\n')
+            if window
+        )
         for window in windows:
             window_id, workspace, pid, *_ = window.split()
             if pid in pids:
@@ -152,15 +156,18 @@ class SpotifyNvim:
         return repr_
 
     def _show_spotify(self):
-        try:
-            spotify_pids = get_spotify_pids()
-            window_id = get_window_id(spotify_pids)
-            if window_id:
-                focus_window(window_id)
-            else:
-                self.error('Spotify is not running')
-        except Exception as e:
-            self.error('You need to install wmctrl to use this feature')
+        spotify_pids = get_spotify_pids()
+        if not spotify_pids:
+            self.error('Spotify is not running')
+            return
+        window_id = get_window_id(spotify_pids)
+        if window_id:
+            focus_window(window_id)
+        else:
+            self.error(
+                'Unable to find Spotify process, '
+                'make sure you have wmctrl installed'
+            )
 
     def error(self, msg):
         self.nvim.err_write('[spotify] {}\n'.format(msg))
