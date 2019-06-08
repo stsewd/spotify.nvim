@@ -3,7 +3,7 @@ import sys
 import time
 from subprocess import PIPE, Popen
 
-import neovim
+import pynvim
 
 try:
     from pydbus import SessionBus
@@ -111,7 +111,7 @@ def focus_window(window_id):
         output, error = proc.communicate()
 
 
-@neovim.plugin
+@pynvim.plugin
 class SpotifyNvim:
 
     def __init__(self, nvim):
