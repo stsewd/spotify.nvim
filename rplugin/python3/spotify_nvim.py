@@ -175,7 +175,7 @@ class SpotifyNvim:
     def print(self, msg):
         self.nvim.out_write('[spotify] {}\n'.format(msg))
 
-    @neovim.command(
+    @pynvim.command(
         'Spotify', nargs=1, complete='customlist,SpotifyCompletions')
     @setup_spotify
     def spotify_command(self, args):
@@ -195,7 +195,7 @@ class SpotifyNvim:
         else:
             self.error('Invalid option')
 
-    @neovim.function('SpotifyCompletions', sync=True)
+    @pynvim.function('SpotifyCompletions', sync=True)
     def spotify_completions(self, args):
         arglead, cmdline, cursorpos, *_ = args
         return [
