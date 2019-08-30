@@ -116,14 +116,19 @@ class SpotifyNvim:
 
     def __init__(self, nvim):
         self.nvim = nvim
-        self.spotify = None
-        self.show_status = self.nvim.vars.get('spotify_show_status', 1)
-        self.wait_time = self.nvim.vars.get('spotify_wait_time', 0.2)
-        self.status_style = self.nvim.vars.get('spotify_status_style', 'ascii')
-        self.status_format = self.nvim.vars.get(
-            'spotify_status_format',
-            ' {status} {song} - {artists} {decorator}'
-        )
+
+    @property
+    def settings(self):
+        settings = {
+            'show_status': self.nvim.vars.get('spotify_show_status', 1),
+            'wait_time': self.nvim.vars.get('spotify_wait_time', 0.2),
+            'status_style': self.nvim.vars.get('spotify_status_style', 'ascii'),
+            'status_format': self.nvim.vars.get(
+                'spotify_status_format',
+                ' {status} {song} - {artists} {decorator}'
+            ),
+        }
+        return settings
 
     def _show_current_status(self):
         data = self.spotify.Metadata
@@ -138,20 +143,22 @@ class SpotifyNvim:
         decorator = ''
         if status.lower() == 'playing':
             decorator = self._get_symbol_repr('music')
-        status_format = self.status_format + '\n'
-        self.nvim.out_write(status_format.format(
-            status=self._get_symbol_repr(status),
-            song=song,
-            artists=', '.join(artists),
-            decorator=decorator
-        ))
+        status_format = self.settings['status_format'] + '\n'
+        self.nvim.out_write(
+            status_format.format(
+                status=self._get_symbol_repr(status),
+                song=song,
+                artists=', '.join(artists),
+                decorator=decorator,
+            ),
+        )
 
     def _get_symbol_repr(self, symbol):
         symbol = symbol.lower()
         repr_ = (
             SYMBOLS_REPR
             .get(symbol, {})
-            .get(self.status_style, '')
+            .get(self.settings['status_style'], '')
         )
         return repr_
 
@@ -170,13 +177,16 @@ class SpotifyNvim:
             )
 
     def error(self, msg):
-        self.nvim.err_write('[spotify] {}\n'.format(msg))
+        self.nvim.err_write(f'[spotify] {msg}\n')
 
     def print(self, msg):
-        self.nvim.out_write('[spotify] {}\n'.format(msg))
+        self.nvim.out_write(f'[spotify] {msg}\n')
 
     @pynvim.command(
-        'Spotify', nargs=1, complete='customlist,SpotifyCompletions')
+        'Spotify',
+        nargs=1,
+        complete='customlist,SpotifyCompletions',
+    )
     @setup_spotify
     def spotify_command(self, args):
         attr = OPTIONS_DICT.get(args[0])
@@ -187,10 +197,10 @@ class SpotifyNvim:
                 method = getattr(self.spotify, attr)
 
             method()
-            if self.show_status and not attr.startswith('_'):
+            if self.settings['show_status'] and not attr.startswith('_'):
                 # We need to wait to the previous
                 # command to get executed
-                time.sleep(self.wait_time)
+                time.sleep(self.settings['wait_time'])
                 self._show_current_status()
         else:
             self.error('Invalid option')
