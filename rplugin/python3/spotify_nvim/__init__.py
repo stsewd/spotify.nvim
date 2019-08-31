@@ -2,7 +2,7 @@ import time
 
 import pynvim
 
-from .constants import OPTIONS, OPTIONS_DICT, SYMBOLS_REPR
+from .constants import OPTIONS, SYMBOLS_REPR
 from .spotify import Spotify, SpotifyError
 
 
@@ -69,7 +69,7 @@ class SpotifyNvimPlugin:
     )
     def spotify_command(self, args):
         try:
-            attr = OPTIONS_DICT.get(args[0])
+            attr = dict(OPTIONS).get(args[0])
             if not attr:
                 self.error('Invalid option')
                 return

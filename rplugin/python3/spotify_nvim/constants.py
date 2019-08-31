@@ -8,7 +8,6 @@ OPTIONS = [
     ('show', 'show_window'),
     ('status', '_show_current_status'),
 ]
-OPTIONS_DICT = dict(OPTIONS)
 
 SYMBOLS_REPR = {
     'playing': {

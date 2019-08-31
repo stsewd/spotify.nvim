@@ -1,7 +1,8 @@
 import logging
 import os
 import sys
-from subprocess import PIPE, Popen
+
+from .windowctrl import WindowCtrlError, focus_program
 
 try:
     from pydbus import SessionBus
@@ -36,56 +37,11 @@ class Spotify:
             log.info('Failed to load session bus: %s', str(e))
             raise SpotifyError('Spotify is not running')
 
-    def _get_spotify_pids(self):
-        command = ['pgrep', 'spotify']
-        with Popen(command, stdout=PIPE, stderr=PIPE) as proc:
-            output, error = proc.communicate()
-            return output.decode().split('\n')
-        return []
-
-
-    def _get_window_id(self, pids):
-        command = [
-            'wmctrl',
-            '-l',  # list windows
-            '-p',  # show pids
-        ]
-        with Popen(command, stdout=PIPE, stderr=PIPE) as proc:
-            output, error = proc.communicate()
-            windows = (
-                window
-                for window in output.decode().split('\n')
-                if window
-            )
-            for window in windows:
-                window_id, workspace, pid, *_ = window.split()
-                if pid in pids:
-                    return window_id
-        return None
-
-
-    def _focus_window(self, window_id):
-        command = [
-            'wmctrl',
-            '-i',  # search by id
-            '-a',  # search
-            window_id,
-        ]
-        with Popen(command, stderr=PIPE) as proc:
-            output, error = proc.communicate()
-
     def show_window(self):
-        spotify_pids = self._get_spotify_pids()
-        if not spotify_pids:
-            raise SpotifyError('Spotify is not running')
-        window_id = self._get_window_id(spotify_pids)
-        if window_id:
-            self._focus_window(window_id)
-        else:
-            raise SpotifyError(
-                'Unable to find Spotify process, '
-                'make sure you have wmctrl installed'
-            )
+        try:
+            focus_program('spotify')
+        except WindowCtrlError as e:
+            raise SpotifyError(str(e))
 
     def play(self):
         self.session_bus.Play()
