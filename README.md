@@ -15,6 +15,8 @@ Control Spotify from Neovim.
 
 - Linux operating system (this plugin doesn't work on Windows, and I not sure about Mac).
 - [pydbus](https://github.com/LEW21/pydbus) (see [requirements](https://github.com/LEW21/pydbus#requirements)).
+  - If you are using pyenv to manage your Python provider, make sure you use:
+    `pyenv virtualenv --system-site-packages system neovim` to create it.
 - [wmctrl](https://en.wikipedia.org/wiki/Wmctrl) (optional, required only for `show` command)
     - `sudo apt-get install wmctrl`
     - `sudo dnf install wmctrl`
