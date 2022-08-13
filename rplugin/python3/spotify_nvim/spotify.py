@@ -1,6 +1,4 @@
 import logging
-import os
-import sys
 
 from pydbus import SessionBus
 
@@ -15,25 +13,21 @@ class SpotifyError(Exception):
 
 
 class Spotify:
-
     def __init__(self):
         self.session_bus = self._get_session_bus()
 
     def _get_session_bus(self):
         bus = SessionBus()
         try:
-            proxy = bus.get(
-                'org.mpris.MediaPlayer2.spotify',
-                '/org/mpris/MediaPlayer2'
-            )
+            proxy = bus.get("org.mpris.MediaPlayer2.spotify", "/org/mpris/MediaPlayer2")
             return proxy
         except Exception as e:
-            log.info('Failed to load session bus: %s', str(e))
-            raise SpotifyError('Spotify is not running')
+            log.info("Failed to load session bus: %s", str(e))
+            raise SpotifyError("Spotify is not running")
 
     def show_window(self):
         try:
-            focus_program('spotify')
+            focus_program("spotify")
         except WindowCtrlError as e:
             raise SpotifyError(str(e))
 
@@ -57,7 +51,7 @@ class Spotify:
 
     def get_status(self):
         data = self.session_bus.Metadata
-        song = data.get('xesam:title', 'No Title')
-        artists = data.get('xesam:artist', ['Unknow'])
+        song = data.get("xesam:title", "No Title")
+        artists = data.get("xesam:artist", ["Unknow"])
         status = self.session_bus.PlaybackStatus
         return (status, song, artists)
