@@ -49,9 +49,62 @@ class Spotify:
     def prev(self):
         self.session_bus.Previous()
 
-    def get_status(self):
-        data = self.session_bus.Metadata
-        song = data.get("xesam:title", "No Title")
-        artists = data.get("xesam:artist", ["Unknow"])
-        status = self.session_bus.PlaybackStatus
-        return (status, song, artists)
+    def _get_relative_value(self, value, increment=10):
+        return value + increment
+
+    @property
+    def volume(self):
+        return int(self.session_bus.Volume * 100)
+
+    @volume.setter
+    def volume(self, value):
+        """Value from 0 to 100, can be relative."""
+        if value.startswith("+") or value.startswith("-"):
+            self.session_bus.Volume = self.session_bus.Volume + int(value) / 100
+        else:
+            self.session_bus.Volume = int(value) / 100
+
+    @property
+    def shuffle(self):
+        return self.session_bus.Shuffle
+
+    @shuffle.setter
+    def shuffle(self, value):
+        self.session_bus.Shuffle = value
+
+    @property
+    def length(self):
+        return self.session_bus.Metadata["mpris:length"] // (10**6)
+
+    @property
+    def time(self):
+        return self.session_bus.Position // (10**6)
+
+    @time.setter
+    def time(self, value: str):
+        """Value in seconds, can be relative."""
+        if value.startswith("+") or value.startswith("-"):
+            self.session_bus.Seek(int(value) * 10**6)
+        else:
+            meta = self.session_bus.Metadata
+            id = meta["mpris:trackid"]
+            self.session_bus.SetPosition(id, int(value) * 10**6)
+
+    @property
+    def status(self):
+        return self.session_bus.PlaybackStatus.lower()
+
+    def metadata(self, defaults=True):
+        keys = [
+            ("id", "mpris:trackid", None),
+            ("title", "xesam:title", "No Title"),
+            ("artists", "xesam:artist", ["Unknow"]),
+            ("album.name", "xesam:album", "No Title"),
+            ("album.artists", "xesam:albumArtist", ["Unknow"]),
+            ("url", "xesam:url", None),
+        ]
+        metadata = self.session_bus.Metadata
+        return {
+            name: metadata.get(key, default if defaults else None)
+            for name, key, default in keys
+        }
