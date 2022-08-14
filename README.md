@@ -2,14 +2,10 @@
 
 Control Spotify from Neovim.
 
-![1](https://user-images.githubusercontent.com/4975310/36114436-055b913e-0ffe-11e8-93ef-37dc9f487852.png)
-![2](https://user-images.githubusercontent.com/4975310/36114434-04f6c1e6-0ffe-11e8-9232-eda34f5e0e65.png)
-![3](https://user-images.githubusercontent.com/4975310/36114432-04d2de0c-0ffe-11e8-97f0-9b1fb287a20b.png)
-![4](https://user-images.githubusercontent.com/4975310/36114431-04a225dc-0ffe-11e8-9085-edc6e60438fe.png)
-![5](https://user-images.githubusercontent.com/4975310/36114430-04811716-0ffe-11e8-8291-4a8bb03a466c.png)
-![6](https://user-images.githubusercontent.com/4975310/36114429-045eb676-0ffe-11e8-86cd-e180dc04b605.png)
-![7](https://user-images.githubusercontent.com/4975310/36114427-043f8e22-0ffe-11e8-9506-cf72f390af1b.png)
-![8](https://user-images.githubusercontent.com/4975310/36114426-04195d60-0ffe-11e8-8e1f-fcbf35ec38fd.png)
+![1](https://user-images.githubusercontent.com/4975310/184558071-58685fed-4fba-459b-a0fd-061981c1ea34.png)
+![2](https://user-images.githubusercontent.com/4975310/184558074-bbd5ebd9-39c6-4b69-a579-7d7f28f44f7d.png)
+
+*Showing status using [nvim-notify](https://github.com/rcarriga/nvim-notify)*
 
 ## Requirements
 
@@ -21,7 +17,7 @@ Control Spotify from Neovim.
     - `sudo apt-get install wmctrl`
     - `sudo dnf install wmctrl`
 
-## Install
+## Installation
 
 Install using [vim-plug](https://github.com/junegunn/vim-plug).
 Put this on your `init.vim`.
@@ -40,49 +36,136 @@ Plug 'stsewd/spotify.nvim', { 'do': ':UpdateRemotePlugins' }
   - `play`
   - `pause`
   - `stop`
-  - `show`: focus Spotify window
-  - `status`: show current song and player status
+  - `show`: Focus Spotify window
+  - `status`: Show current song and player status
+  - `volume [value]`: Set the volume to `value`.
+     The value is a number from 0 to 100,
+     you can prefix the value with `+` or `-`
+     to change the volume relatively to the current value.
+  - `time [value]`: Set the time of the current song to `value`.
+     The value is given in seconds,
+     you can prefix the value with `+` or `-`
+     to change the time relatively to the current value.
+  - `shuffle [value]`: De/activate shuffle.
+     The value can be `on` or `off`,
 
 ## Configuration
 
-### Show current song and player status after each command
+### Show the player status after each command
 
 ```vim
 g:spotify_show_status = 1
 ```
 
-### Style of the symbols in the status
-
-Options can be:
-
-- `text`
-- `ascii` (default)
-- `emoji`
+### Symbols used in the player status
 
 ```vim
-g:spotify_status_style = 'ascii'
+let g:spotify_symbols = {
+    \ "playing": "▶",
+    \ "paused": "⏸",
+    \ "stopped": "■",
+    \ "volume.high": "🔊",
+    \ "volume.medium": "🔉",
+    \ "volume.low":  "🔈",
+    \ "volume.muted": "🔇",
+    \ "shuffle.enabled": "⤮ [on]",
+    \ "shuffle.disabled": "⤮ [off]",
+    \ "progress.mark": "●",
+    \ "progress.complete": "─",
+    \ "progress.missing": "┈",
+    \}
 ```
 
-### Format of the status
+### Template of the player status
 
-The available variables are:
+The template is given by a list,
+where each element represents a line.
+And each element can be a template block or a list of of template blocks.
 
-- `status`: the current status (the style is decided by `g:spotify_status_style`).
-- `song`: the current song name.
+A template block is a dictionary with the folloing options:
+
+- `template`: A string that would be evaluated using the `.format()` Python method.
+- `align`: Alignment of the template, can be empty, left or center.
+- `shorten`: A boolean value, if it's `true` and the evaluated template is larger than `width`,
+  the value will be truncated.
+
+The variables you can use inside a template are:
+
+- `status`: the current status (playing, paused, stopped).
+- `status_symbol`: the symbol from `spotify_symbols`.
+- `title`: the title of the song.
 - `artists`: comma separated artists.
-- `decorator`: only visible when a song is playing.
-
-_Note_: this is a python format string.
+- `album_name`: the name of the album.
+- `album_artists`: comma separated artists.
+- `shuffle_symbol`: the symbol from `spotify_symbols`.
+- `volume`: the current volume level (0 to 100).
+- `volume_symbol`: the symbol from `spotify_symbols`.
+- `time`: the current time of the song in mm:ss format.
+- `length`: the length of the song in mm:ss format.
+- `progress_bar`: progress bar.
 
 ```vim
-g:spotify_status_format = ' {status} {song} - {artists} {decorator}'
+let g:spotify_template = [
+   \   {
+   \       "template": " 🎶 {title}",
+   \       "shorten": v:true,
+   \   },
+   \   {
+   \       "template": " 🎨 {artists}",
+   \       "shorten": v:true,
+   \   },
+   \   {
+   \       "template": " 💿 {album_name}",
+   \       "shorten": v:true,
+   \   },
+   \   {},
+   \   [
+   \           {
+   \               "template": "  {shuffle_symbol}",
+   \               "align": "center",
+   \           },
+   \           {
+   \               "template": "{status_symbol}",
+   \               "align": "center",
+   \           },
+   \           {
+   \               "template": "{volume_symbol} {volume}%  ",
+   \               "align": "center",
+   \           }
+   \   ],
+   \   {},
+   \   {
+   \       "template": "{time} / {length}",
+   \       "align": "center",
+   \   },
+   \   {
+   \       "template": "{progress_bar}",
+   \       "align": "center",
+   \   }
+   \]
+```
+
+### Status width
+
+Used when rendering the template from `spotify_template`.
+
+```vim
+g:spotify_width = 34
+```
+
+### Progress bar width
+
+The width of the progress bar used when rendering the template from `spotify_template`.
+
+```vim
+g:spotify_progress_bar_width = 32
 ```
 
 ### Wait time
 
 Time in milliseconds to wait to show the player status after each command.
 
-_This is needed, since Spotify could return the previous state, no the current one_.
+_This is needed, since DBus/Spotify takes some time applying a change_.
 
 ```vim
 g:spotify_wait_time = 0.2
@@ -91,14 +174,15 @@ g:spotify_wait_time = 0.2
 ## Mappings example
 
 ```vim
-nnoremap <C-s>n :Spotify next<CR>
-nnoremap <C-s>p :Spotify prev<CR>
-nnoremap <C-s>s :Spotify play/pause<CR>
-nnoremap <C-s>o :Spotify show<CR>
-nnoremap <C-s>c :Spotify status<CR>
+nmap <leader>ss <Plug>(spotify-play/pause)
+nmap <leader>sj <Plug>(spotify-next)
+nmap <leader>sk <Plug>(spotify-prev)
+nmap <leader>so <Plug>(spotify-show)
+nmap <leader>sc <Plug>(spotify-status)
 ```
 
 ## References
 
+- https://specifications.freedesktop.org/mpris-spec/latest/index.html
 - https://specifications.freedesktop.org/mpris-spec/latest/Player_Interface.html
 - https://github.com/LEW21/pydbus/blob/master/doc/tutorial.rst
