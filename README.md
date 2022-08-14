@@ -59,6 +59,8 @@ g:spotify_show_status = 1
 
 ### Symbols used in the player status
 
+See [below for inspiration](#inspiration-for-symbols).
+
 ```vim
 let g:spotify_symbols = {
     \ "playing": "▶",
@@ -180,6 +182,17 @@ nmap <leader>sk <Plug>(spotify-prev)
 nmap <leader>so <Plug>(spotify-show)
 nmap <leader>sc <Plug>(spotify-status)
 ```
+
+## Inspiration for symbols
+
+- playing: ▶ ▶️
+- paused: ⏸ ⏸️
+- stopped: ■ ⏹️
+- album: 💿︎💿
+- artist: © 🎨
+- music: ♫♪ 🎶
+- volume: ∅ 🕨 🕩 🕪  🔇 🔈 🔉 🔊
+- shuffle: ⤮ 🔀
 
 ## References
 
