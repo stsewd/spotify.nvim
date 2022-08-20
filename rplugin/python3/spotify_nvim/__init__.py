@@ -7,7 +7,7 @@ import pynvim
 from .spotify import Spotify, SpotifyError
 
 
-@dataclasses.dataclass(slots=True)
+@dataclasses.dataclass
 class Settings:
 
     show_status: bool = True
