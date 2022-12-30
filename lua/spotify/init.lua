@@ -1,5 +1,8 @@
 local M = {}
-local config = {}
+local config = {
+  refresh_interval = 50,
+  cycle_speed = 5,
+}
 local open_notification = nil
 
 function M.setup(opts)
@@ -7,43 +10,43 @@ function M.setup(opts)
 end
 
 function M.play_pause()
-  vim.fn.SpotifyAction('play/pause')
+  vim.fn.SpotifyAction("play/pause")
 end
 
 function M.play()
-  vim.fn.SpotifyAction('play')
+  vim.fn.SpotifyAction("play")
 end
 
 function M.pause()
-  vim.fn.SpotifyAction('pause')
+  vim.fn.SpotifyAction("pause")
 end
 
 function M.stop()
-  vim.fn.SpotifyAction('stop')
+  vim.fn.SpotifyAction("stop")
 end
 
 function M.next()
-  vim.fn.SpotifyAction('next')
+  vim.fn.SpotifyAction("next")
 end
 
 function M.prev()
-  vim.fn.SpotifyAction('prev')
+  vim.fn.SpotifyAction("prev")
 end
 
 function M.show()
-  vim.fn.SpotifyAction('show')
+  vim.fn.SpotifyAction("show")
 end
 
 function M.volume(value)
-  return vim.fn.SpotifyAction('volume', value)
+  return vim.fn.SpotifyAction("volume", value)
 end
 
 function M.shuffle(value)
-  vim.fn.SpotifyAction('shuffle', value)
+  vim.fn.SpotifyAction("shuffle", value)
 end
 
 function M.time(value)
-  vim.fn.SpotifyAction('time', value)
+  vim.fn.SpotifyAction("time", value)
 end
 
 function M.status()
@@ -52,31 +55,36 @@ function M.status()
   if status ~= vim.NIL then
     local opts = {
       title = "Spotify",
-      on_close= function ()
+      on_close = function()
         open_notification = nil
       end,
+      on_open = function()
+        local timer = vim.loop.new_timer()
+        timer:start(
+          config.refresh_interval,
+          config.refresh_interval,
+          vim.schedule_wrap(function()
+            current_cycle = current_cycle + 1
+            local status_ = vim.fn.SpotifyRenderStatus(true, math.floor(current_cycle / config.cycle_speed))
+            if status_ == vim.NIL or not open_notification then
+              return
+            end
+            local opts_ = {
+              title = "Spotify",
+              on_close = function()
+                pcall(timer.stop, timer)
+                pcall(timer.close, timer)
+                open_notification = nil
+              end,
+              hide_from_history = true,
+              replace = open_notification,
+              timeout = 0,
+            }
+            open_notification = vim.notify(status_, vim.log.levels.INFO, opts_)
+          end)
+        )
+      end,
     }
-    opts.on_open = function ()
-      local timer = vim.loop.new_timer()
-      timer:start(50, 50, vim.schedule_wrap(function()
-        current_cycle = current_cycle + 1
-        local status_ = vim.fn.SpotifyRenderStatus(true, math.floor(current_cycle / 5))
-        if status_ == vim.NIL or not open_notification then
-          return
-        end
-        local opts_ = {
-          title = "Spotify",
-          on_close= function ()
-            pcall(timer.close, timer)
-            open_notification = nil
-          end,
-          hide_from_history = true,
-          replace=open_notification,
-          timeout=0,
-        }
-        open_notification = vim.notify(status_, vim.log.levels.INFO, opts_)
-      end))
-    end
 
     if open_notification then
       opts.hide_from_history = true

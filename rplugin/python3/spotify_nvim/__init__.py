@@ -50,6 +50,10 @@ class Settings:
             {},
             [
                 {
+                    "template": " ",
+                    "width": 1,
+                },
+                {
                     "template": "  {shuffle_symbol}",
                     "align": "center",
                 },
@@ -63,14 +67,26 @@ class Settings:
                 },
             ],
             {},
-            {
-                "template": "{time} / {length}",
-                "align": "center",
-            },
-            {
-                "template": "{progress_bar}",
-                "align": "center",
-            },
+            [
+                {
+                    "template": " ",
+                    "width": 1,
+                },
+                {
+                    "template": "{time} / {length}",
+                    "align": "center",
+                },
+            ],
+            [
+                {
+                    "template": " ",
+                    "width": 1,
+                },
+                {
+                    "template": "{progress_bar}",
+                    "align": "center",
+                },
+            ],
         ]
     )
     symbols: dict = dataclasses.field(
@@ -222,9 +238,9 @@ class SpotifyNvimPlugin:
 
     def _get_progress_bar(self, percent=0, length=35):
         middle = int(length * percent)
-        bar = self.get_symbol("progress.complete") * (middle - 1)
+        bar = self.get_symbol("progress.complete") * middle
         bar += self.get_symbol("progress.mark")
-        bar += self.get_symbol("progress.missing") * (length - middle)
+        bar += self.get_symbol("progress.missing") * (length - middle - 1)
         return bar
 
     def _format_seconds(self, seconds):
