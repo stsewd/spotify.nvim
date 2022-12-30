@@ -14,18 +14,39 @@ class Settings:
     wait_time: float = 0.2
     template: list = dataclasses.field(
         default_factory=lambda: [
-            {
-                "template": " 🎶 {title}",
-                "shorten": True,
-            },
-            {
-                "template": " 🎨 {artists}",
-                "shorten": True,
-            },
-            {
-                "template": " 💿 {album_name}",
-                "shorten": True,
-            },
+            [
+                {
+                    "template": "🎶",
+                    "width": 3,
+                    "align": "center",
+                },
+                {
+                    "template": "{title}",
+                    "shorten": True,
+                },
+            ],
+            [
+                {
+                    "template": "🎨",
+                    "width": 3,
+                    "align": "center",
+                },
+                {
+                    "template": "{artists}",
+                    "shorten": True,
+                },
+            ],
+            [
+                {
+                    "template": "💿",
+                    "width": 3,
+                    "align": "center",
+                },
+                {
+                    "template": "{album_name}",
+                    "shorten": True,
+                },
+            ],
             {},
             [
                 {
@@ -145,28 +166,34 @@ class SpotifyNvimPlugin:
         spotify = Spotify()
         self._show_current_status(spotify=spotify)
 
-    def _handle_volume(self, value=None):
+    def _handle_volume(self, value=None, show_status=True):
         spotify = Spotify()
         if value:
-            spotify.volume = value
-            self.wait()
-        self._show_current_status(spotify)
+            spotify.volume = str(value)
+        if show_status:
+            if value:
+                self.wait()
+            self._show_current_status(spotify)
+        return spotify.volume
 
-    def _handle_time(self, value=None):
+    def _handle_time(self, value=None, show_status=True):
         spotify = Spotify()
         if value:
-            spotify.time = value
-            self.wait()
-        self._show_current_status(spotify)
+            spotify.time = str(value)
+        if show_status:
+            if value:
+                self.wait()
+            self._show_current_status(spotify)
+        return spotify.time
 
-    def _handle_shuffle(self, value=None):
+    def _handle_shuffle(self, value=None, show_status=True):
         spotify = Spotify()
         yes_values = ("yes", "on", "true")
         no_values = ("no", "off", "false")
-        if value:
-            if value in yes_values:
+        if value is not None:
+            if value in yes_values or value is True:
                 spotify.shuffle = True
-            elif value in no_values:
+            elif value in no_values or value is False:
                 spotify.shuffle = False
             else:
                 valid_options = ", ".join(yes_values) + ", " + ", ".join(no_values)
@@ -175,9 +202,12 @@ class SpotifyNvimPlugin:
                     level="error",
                 )
                 return
-            self.wait()
 
-        self._show_current_status(spotify)
+        if show_status:
+            if value:
+                self.wait()
+            self._show_current_status(spotify)
+        return spotify.shuffle
 
     def _get_volume_symbol(self, volume):
         if volume == 0:
@@ -206,6 +236,10 @@ class SpotifyNvimPlugin:
         return self.get_symbol(state)
 
     def _show_current_status(self, spotify: Spotify):
+        status = "\n".join(self._render_current_status(spotify))
+        self.notify(status)
+
+    def _render_current_status(self, spotify: Spotify, cycle: int = 0):
         width = self.settings.width
         meta = spotify.metadata()
 
@@ -237,22 +271,50 @@ class SpotifyNvimPlugin:
         result = []
         for block in self.settings.template:
             if isinstance(block, dict):
-                text = self._render(block=block, width=width, context=context)
+                text = self._render(
+                    block=block, width=width, context=context, cycle=cycle
+                )
             else:
-                block_width = width // len(block)
-                line = [
-                    self._render(block=subblock, width=block_width, context=context)
-                    for subblock in block
-                ]
+                line = []
+                block_width = width
+                for i, subblock in enumerate(block):
+                    default_subblock_width = block_width // (len(block) - i)
+                    subblock_width = subblock.get("width", default_subblock_width)
+                    block_width -= subblock_width
+                    line.append(
+                        self._render(
+                            block=subblock,
+                            width=subblock_width,
+                            context=context,
+                            cycle=cycle,
+                        )
+                    )
                 text = "".join(line)
             result.append(text)
-        self.notify("\n".join(result))
+        return result
 
-    def _render(self, block, context, width):
+    def _render(self, block: dict, context: dict, width: int, cycle: int = 0):
+        pause = 6
         template = block.get("template", "")
         text = template.format(**context)
-        if block.get("shorten") and len(text) > width:
-            text = text[: width - 3] + "..."
+        text_len = len(text)
+        if block.get("shorten") and text_len > width:
+            tail = "..."
+            width -= len(tail)
+            cycle = cycle % (text_len - width + 1 + (pause * 2))
+            if cycle < pause:
+                cycle = 0
+            else:
+                cycle -= pause
+
+            if cycle > text_len - width:
+                cycle = text_len - width + 1
+
+            start = cycle
+            end = start + width
+            text = text[start:end]
+            if end < text_len:
+                text += tail[: text_len - end]
         align = block.get("align")
         if align == "center":
             return text.center(width)
@@ -305,3 +367,61 @@ class SpotifyNvimPlugin:
             for option in self.handlers
             if option.lower().startswith(arglead.lower())
         ]
+
+    @pynvim.function("SpotifyMetadata", sync=True)
+    def get_spotify_metadata(self, args):
+        spotify = Spotify()
+        result = {
+            "volume": spotify.volume,
+            "shuffle": spotify.shuffle,
+            "length": spotify.length,
+            "time": spotify.time,  # Current time
+            "status": spotify.status,
+            "metadata": spotify.metadata(),
+        }
+        return result
+
+    @pynvim.function("SpotifyRenderStatus", sync=True)
+    def get_rendered_status(self, args):
+        """
+        Get the rendered status.
+
+        It can receive one argument.
+        if it's true, return the status as a string,
+        otherwise, return an array.
+        """
+        return_string = False
+        if args and args[0]:
+            return_string = True
+        cycle = 0
+        if args or len(args) > 1:
+            cycle = args[1]
+
+        spotify = Spotify()
+        status = self._render_current_status(spotify, cycle=cycle)
+        if return_string:
+            return "\n".join(status)
+        return status
+
+    @pynvim.function("SpotifyAction", sync=True)
+    def execute_action(self, args):
+        """
+        The fist argument is the name of the action.
+        If the action takes a value, the second argument is the value.
+        """
+        try:
+            attr = self.handlers.get(args[0])
+            if not attr:
+                raise ValueError("Missing argument `action`.")
+            func, accept_args = attr
+            if accept_args and len(args) > 1:
+                return func(args[1], show_status=False)
+            else:
+                return func(show_status=False)
+        except SpotifyError as e:
+            self.error(str(e))
+
+    @pynvim.function("Spotify__DummyStart", sync=True)
+    def dummy_start(self, args):
+        """Workardoun for https://github.com/neovim/pynvim/pull/496."""
+        return
