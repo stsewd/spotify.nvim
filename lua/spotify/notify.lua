@@ -1,4 +1,4 @@
-local config = require("spotify.config")
+local config = require("spotify").config
 
 local M = {}
 
