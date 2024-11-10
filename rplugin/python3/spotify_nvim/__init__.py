@@ -163,6 +163,7 @@ class SpotifyNvimPlugin:
     def _spotify_method(self, event):
         spotify = Spotify()
         getattr(spotify, event)()
+        return True
 
     def _handle_volume(self, value=None):
         spotify = Spotify()
@@ -180,13 +181,17 @@ class SpotifyNvimPlugin:
         spotify = Spotify()
         yes_values = ("yes", "on", "true")
         no_values = ("no", "off", "false")
+        if value == "toggle":
+            value = not spotify.shuffle
         if value is not None:
             if value in yes_values or value is True:
                 spotify.shuffle = True
             elif value in no_values or value is False:
                 spotify.shuffle = False
             else:
-                valid_options = ", ".join(yes_values) + ", " + ", ".join(no_values)
+                valid_options = (
+                    ", ".join(yes_values) + ", " + ", ".join(no_values) + ", toggle"
+                )
                 self.notify(
                     f"Invalid option. Valid options are: {valid_options}.",
                     level="error",
@@ -210,7 +215,9 @@ class SpotifyNvimPlugin:
         middle = int(length * percent)
         bar = self.get_symbol("progress.complete", settings.symbols) * middle
         bar += self.get_symbol("progress.mark", settings.symbols)
-        bar += self.get_symbol("progress.missing", settings.symbols) * (length - middle - 1)
+        bar += self.get_symbol("progress.missing", settings.symbols) * (
+            length - middle - 1
+        )
         return bar
 
     def _format_seconds(self, seconds):
@@ -225,7 +232,9 @@ class SpotifyNvimPlugin:
         status = "\n".join(self._render_current_status(spotify, settings))
         self.notify(status)
 
-    def _render_current_status(self, spotify: Spotify, settings: RenderStatusOptions, cycle: int = 0):
+    def _render_current_status(
+        self, spotify: Spotify, settings: RenderStatusOptions, cycle: int = 0
+    ):
         width = settings.width
         meta = spotify.metadata()
 
@@ -323,12 +332,6 @@ class SpotifyNvimPlugin:
     def get_symbol(self, symbol, symbols, default=""):
         return symbols.get(symbol, default)
 
-    def error(self, msg):
-        self.nvim.err_write(f"[spotify] {msg}\n")
-
-    def print(self, msg):
-        self.nvim.out_write(f"[spotify] {msg}\n")
-
     @pynvim.function("SpotifyMetadata", sync=True)
     def get_spotify_metadata(self, args):
         spotify = Spotify()
@@ -363,10 +366,12 @@ class SpotifyNvimPlugin:
 
         try:
             spotify = Spotify()
-            status = self._render_current_status(spotify, cycle=cycle, settings=settings)
+            status = self._render_current_status(
+                spotify, cycle=cycle, settings=settings
+            )
             return status
         except SpotifyError as e:
-            self.print(str(e))
+            self.notify(msg=str(e), level="error")
             return None
 
     @pynvim.function("SpotifyAction", sync=True)
@@ -385,9 +390,5 @@ class SpotifyNvimPlugin:
             else:
                 return func()
         except SpotifyError as e:
-            self.error(str(e))
-
-    # @pynvim.function("Spotify__DummyStart", sync=True)
-    def dummy_start(self, args):
-        """Workaround for https://github.com/neovim/pynvim/pull/496."""
-        return
+            self.notify(msg=str(e), level="error")
+            return False

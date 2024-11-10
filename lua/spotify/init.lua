@@ -14,30 +14,11 @@ local config = {
   },
 }
 
-local function completion(arglead, cmdline, cursorpos)
-  local result = { "play", "pause", "play/pause" }
-  -- local i = 1
-  -- for action in ipairs(get_actions())
-  --   result[i] = action
-  -- end
-  return result
-end
-
 -- Local variable to keep track of the current open notification.
 local notification_id = nil
 local current_cycle = 0
 local timeout = 0
 local timer = nil
-
-function M.setup(opts)
-  -- Merge config with defaults
-  config = vim.tbl_deep_extend("force", config, opts or {}) or {}
-
-  -- Create command.
-  vim.api.nvim_create_user_command("Spotify", function(cmd_opts)
-    M._execute(cmd_opts.fargs[1], cmd_opts.fargs[2])
-  end, { nargs = "+", complete = completion })
-end
 
 local function get_actions()
   local actions = {
@@ -54,6 +35,10 @@ local function get_actions()
     show = { M.show, false },
   }
   return actions
+end
+
+local function completion(arglead, cmdline, cursorpos)
+  return vim.tbl_keys(get_actions())
 end
 
 --- Wrapper around the execution of a spotify command.
@@ -106,14 +91,23 @@ function M.show()
 end
 
 function M.volume(value)
+  if value == nil then
+    value = "+10"
+  end
   return vim.fn.SpotifyAction("volume", value)
 end
 
 function M.shuffle(value)
+  if value == nil then
+    value = "toggle"
+  end
   vim.fn.SpotifyAction("shuffle", value)
 end
 
 function M.time(value)
+  if value == nil then
+    value = "+10"
+  end
   vim.fn.SpotifyAction("time", value)
 end
 
@@ -163,7 +157,6 @@ function M.status()
     vim.schedule_wrap(function()
       if timeout <= 0 then
         close_timer()
-        reset()
         return
       end
 
@@ -184,15 +177,33 @@ function M.status()
         end
         opts.on_close = function()
           close_timer()
-          reset()
         end
       end
       local status = vim.fn.SpotifyRenderStatus(math.floor(current_cycle / config.cycle_speed), config.render)
-      notification_id = vim.notify(status, vim.log.levels.INFO, opts)
+      if not status or status == vim.NIL then
+        close_timer()
+        return
+      end
+
+      local resp = vim.notify(status, vim.log.levels.INFO, opts)
+      if using_notify then
+        notification_id = resp
+      end
+
       current_cycle = current_cycle + 1
       timeout = timeout - config.refresh_interval
     end)
   )
+end
+
+function M.setup(opts)
+  -- Merge config with defaults
+  config = vim.tbl_deep_extend("force", config, opts or {}) or {}
+
+  -- Create command.
+  vim.api.nvim_create_user_command("Spotify", function(cmd_opts)
+    M._execute(cmd_opts.fargs[1], cmd_opts.fargs[2])
+  end, { nargs = "+", complete = completion })
 end
 
 return M
