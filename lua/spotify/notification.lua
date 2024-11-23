@@ -17,14 +17,12 @@ local function close_timer()
   timer = nil
 end
 
-function M.status()
+function M.show()
   -- If called again, just reset the timer.
-  timeout = config.timeout
-  -- TODO: these should be configurable,
-  -- or maybe autodetect if the user has the plugins installed.
-  -- for now, make it work for both, since they don't conflict (yet).
-  local using_snacks = true
-  local using_notify = true
+  timeout = config.notification.timeout
+
+  local using_snacks = config.notification.backend == "snacks"
+  local using_notify = config.notification.backend == "notify"
 
   -- If there is a timer running, just return,
   -- since the timeout was reset.
@@ -41,17 +39,17 @@ function M.status()
   -- One notification per timer.
   notification_id = nil
 
-  -- -- Use a different notification id for each timer.
-  -- if using_snacks then
-  --   notification_id = "spotify-status-" .. vim.uv.now()
-  -- end
+  -- Use a different notification id for each timer.
+  if using_snacks then
+    notification_id = "spotify-status-" .. vim.uv.now()
+  end
 
   timer = vim.uv.new_timer()
   timer:start(
     -- Start the timer immediately.
     0,
     -- Repeat after refresh_interval (milliseconds)
-    config.refresh_interval,
+    config.notification.refresh_interval,
     -- Callback
     vim.schedule_wrap(function()
       if timeout <= 0 then
@@ -65,7 +63,7 @@ function M.status()
       }
 
       if using_snacks then
-        opts.id = "spotify-status"
+        opts.id = notification_id
         opts.ft = "spotify-status"
       end
 
@@ -78,19 +76,23 @@ function M.status()
           close_timer()
         end
       end
-      local status = vim.fn.SpotifyRenderStatus(math.floor(current_cycle / config.cycle_speed), config.render)
-      if not status or status == vim.NIL then
+      local cycle = math.floor(current_cycle / config.notification.cycle_speed)
+      local ok, status = unpack(vim.fn.SpotifyRenderStatus(cycle, config.notification))
+      if not ok then
         close_timer()
+        vim.notify(status, vim.log.levels.ERROR, opts)
         return
       end
 
+      -- Merge opts with user provided opts.
+      opts = vim.tbl_extend("force", opts, config.notification.extra_opts)
       local resp = vim.notify(status, vim.log.levels.INFO, opts)
       if using_notify then
         notification_id = resp
       end
 
       current_cycle = current_cycle + 1
-      timeout = timeout - config.refresh_interval
+      timeout = timeout - config.notification.refresh_interval
     end)
   )
 end

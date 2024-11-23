@@ -49,9 +49,6 @@ class Spotify:
     def prev(self):
         self.session_bus.Previous()
 
-    def _get_relative_value(self, value, increment=10):
-        return value + increment
-
     @property
     def volume(self):
         return int(self.session_bus.Volume * 100)
@@ -74,10 +71,12 @@ class Spotify:
 
     @property
     def length(self):
+        """Total time in seconds."""
         return self.session_bus.Metadata["mpris:length"] // (10**6)
 
     @property
     def time(self):
+        """Current time in seconds."""
         return self.session_bus.Position // (10**6)
 
     @time.setter
@@ -92,14 +91,19 @@ class Spotify:
 
     @property
     def status(self):
+        """
+        Playback status.
+
+        Can be "playing", "paused" or "stopped".
+        """
         return self.session_bus.PlaybackStatus.lower()
 
     def metadata(self, defaults=True):
         keys = [
             ("id", "mpris:trackid", None),
-            ("title", "xesam:title", "No Title"),
+            ("title", "xesam:title", "No title"),
             ("artists", "xesam:artist", ["Unknow"]),
-            ("album.name", "xesam:album", "No Title"),
+            ("album.name", "xesam:album", "No title"),
             ("album.artists", "xesam:albumArtist", ["Unknow"]),
             ("url", "xesam:url", None),
         ]
