@@ -77,6 +77,7 @@ function M.show()
         end
       end
       local cycle = math.floor(current_cycle / config.notification.cycle_speed)
+      -- This takes some time to run, and makes the timer not accurate.
       local ok, status = unpack(vim.fn.SpotifyRenderStatus(cycle, config.notification))
       if not ok then
         close_timer()
