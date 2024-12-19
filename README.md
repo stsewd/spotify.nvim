@@ -17,6 +17,8 @@ Control Spotify from Neovim.
 - [wmctrl](https://en.wikipedia.org/wiki/Wmctrl) (optional, required only for the `show` command)
     - `sudo apt-get install wmctrl`
     - `sudo dnf install wmctrl`
+- [nvim-notify](https://github.com/rcarriga/nvim-notify) or [snacks.nvim's notifier](https://github.com/folke/snacks.nvim/blob/main/docs/notifier.md)
+  for fancy asynchronous notifications.
 
 ## Installation
 
