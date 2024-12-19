@@ -1,75 +1,7 @@
-# Spotify.nvim
+local M = {}
 
-Control Spotify from Neovim.
-
-![1](https://user-images.githubusercontent.com/4975310/184558071-58685fed-4fba-459b-a0fd-061981c1ea34.png)
-![2](https://user-images.githubusercontent.com/4975310/184558074-bbd5ebd9-39c6-4b69-a579-7d7f28f44f7d.png)
-
-*Showing status using [nvim-notify](https://github.com/rcarriga/nvim-notify)*
-
-## Requirements
-
-- Linux operating system (this plugin doesn't work on Windows, and I not sure about Mac).
-- [pydbus](https://github.com/LEW21/pydbus) (see [requirements](https://github.com/LEW21/pydbus#requirements)).
-  - If you are using pyenv to manage your Python provider, make sure you use:
-    `pyenv virtualenv --system-site-packages system neovim` to create it.
-  - If you are using uv, use: `uv venv --python-preference system --system-site-packages`.
-- [wmctrl](https://en.wikipedia.org/wiki/Wmctrl) (optional, required only for the `show` command)
-    - `sudo apt-get install wmctrl`
-    - `sudo dnf install wmctrl`
-
-## Installation
-
-Install using [lazy.nvim](https://github.com/folke/lazy.nvim):
-
-```lua
-{
-  "stsewd/spotify.nvim",
-  build = ":UpdateRemotePlugins",
-  config = function()
-    require("spotify").setup()
-  end,
-  init = function()
-    -- Optional mappings.
-    vim.keymap.set("n", "<leader>ss", ":Spotify play/pause<CR>", { silent = true })
-    vim.keymap.set("n", "<leader>sj", ":Spotify next<CR>", { silent = true })
-    vim.keymap.set("n", "<leader>sk", ":Spotify prev<CR>", { silent = true })
-    vim.keymap.set("n", "<leader>so", ":Spotify show<CR>", { silent = true })
-    vim.keymap.set("n", "<leader>sc", ":Spotify status<CR>", { silent = true })
-  end,
-},
-```
-
-## Usage
-
-- Start Spotify.
-- Call `:Spotify {option}`. Where option can be:
-  - `play/pause`
-  - `next`
-  - `prev`
-  - `play`
-  - `pause`
-  - `stop`
-  - `show`: Focus Spotify window
-  - `status`: Show current song and player status
-  - `volume [value]`: Set the volume to `value`.
-     The value is a number from 0 to 100,
-     you can prefix the value with `+` or `-`
-     to change the volume relatively to the current value.
-     You can repeat `-`/`+` to change the volume by increments of 5.
-  - `time [value]`: Set the time of the current song to `value`.
-     The value is given in seconds,
-     you can prefix the value with `+` or `-`
-     to change the time relatively to the current value.
-     You can repeat `-`/`+` to change the time by increments of 5.
-  - `shuffle [value]`: De/activate shuffle.
-     The value can be: `on`, `off`, `toggle`.
-     If no value is given, it will default to `toggle`.
-
-## Configuration
-
-```lua
-require("spotify").setup({
+---@class spotify.Config
+M.config = {
   -- Whether to show status after an action is executed using the :Spotify command.
   notify_after_action = true,
   defaults = {
@@ -228,22 +160,39 @@ require("spotify").setup({
       width = 40,
     },
   },
-})
-```
+}
 
-## Inspiration for symbols
+local function detect_notification_backend()
+  local ok, result = pcall(require, "notify")
+  if ok and result == vim.notify then
+    return "notify"
+  end
+  ok, result = pcall(require, "snacks")
+  if ok and result.config.notifier.enabled then
+    return "snacks"
+  end
+  return "builtin"
+end
 
-- playing: ▶ ▶️
-- paused: ⏸ ⏸️
-- stopped: ■ ⏹️
-- album: 💿︎💿
-- artist: © 🎨 👥
-- music: ♫♪ 🎶
-- volume: ∅ 🕨 🕩 🕪  🔇 🔈 🔉 🔊
-- shuffle: ⤮ 🔀
+local function completion(arglead, cmdline, cursorpos)
+  local actions = require("spotify.actions")
+  return vim.tbl_keys(actions.get_actions())
+end
 
-## References
+---@param opts spotify.Config?
+function M.setup(opts)
+  -- Merge config with defaults
+  M.config = vim.tbl_deep_extend("force", M.config, opts or {})
 
-- https://specifications.freedesktop.org/mpris-spec/latest/index.html
-- https://specifications.freedesktop.org/mpris-spec/latest/Player_Interface.html
-- https://github.com/LEW21/pydbus/blob/master/doc/tutorial.rst
+  if M.config.notification.backend == "auto" then
+    M.config.notification.backend = detect_notification_backend()
+  end
+
+  -- Create command.
+  vim.api.nvim_create_user_command("Spotify", function(cmd_opts)
+    local actions = require("spotify.actions")
+    actions.execute(cmd_opts.fargs[1], cmd_opts.fargs[2])
+  end, { nargs = "+", complete = completion, force = true })
+end
+
+return M

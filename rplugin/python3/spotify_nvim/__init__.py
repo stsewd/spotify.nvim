@@ -1,119 +1,24 @@
-import dataclasses
-import time
 from functools import cached_property, partial
 
 import pynvim
 
+from .dataclasses import (
+    AlbumContext,
+    NotificationConfig,
+    PlaybackContext,
+    ProgressbarConfig,
+    ShuffleContext,
+    TemplateItem,
+    TimeContext,
+    VolumeContext,
+)
 from .spotify import Spotify, SpotifyError
-
-
-@dataclasses.dataclass
-class Settings:
-
-    show_status: bool = True
-    wait_time: float = 0.2
-    template: list = dataclasses.field(
-        default_factory=lambda: [
-            {
-                "template": " 🎶 {title}",
-                "shorten": True,
-            },
-            {
-                "template": " 🎨 {artists}",
-                "shorten": True,
-            },
-            {
-                "template": " 💿 {album_name}",
-                "shorten": True,
-            },
-            {},
-            [
-                {
-                    "template": "  {shuffle_symbol}",
-                    "align": "center",
-                },
-                {
-                    "template": "{status_symbol}",
-                    "align": "center",
-                },
-                {
-                    "template": "{volume_symbol} {volume}%  ",
-                    "align": "center",
-                },
-            ],
-            {},
-            {
-                "template": "{time} / {length}",
-                "align": "center",
-            },
-            {
-                "template": "{progress_bar}",
-                "align": "center",
-            },
-        ]
-    )
-    symbols: dict = dataclasses.field(
-        default_factory=lambda: {
-            "playing": "▶",
-            "paused": "⏸",
-            "stopped": "■",
-            "volume.high": "🔊",
-            "volume.medium": "🔉",
-            "volume.low": "🔈",
-            "volume.muted": "🔇",
-            "shuffle.enabled": "⤮ on",
-            "shuffle.disabled": "⤮ off",
-            "progress.mark": "●",
-            "progress.complete": "─",
-            "progress.missing": "┈",
-        }
-    )
-    progress_bar_width: int = 32
-    width: int = 34
 
 
 @pynvim.plugin
 class SpotifyNvimPlugin:
     def __init__(self, nvim: pynvim.Nvim):
         self.nvim = nvim
-
-    @cached_property
-    def settings(self):
-        settings = Settings()
-        for field in dataclasses.fields(Settings):
-            setting = self.nvim.vars.get(f"spotify_{field.name}")
-            if setting:
-                default = getattr(settings, field.name)
-                if isinstance(default, dict):
-                    default.update(setting)
-                else:
-                    setattr(settings, field.name, setting)
-        if self.nvim.vars.get("spotify_status_style"):
-            self.notify(
-                msg=(
-                    "The `spotify_status_style` option has been removed. "
-                    "Use the `spotify_symbols` option instead."
-                ),
-                level="error",
-            )
-        if self.nvim.vars.get("spotify_status_format"):
-            self.notify(
-                msg=(
-                    "The `spotify_status_format` option has been removed. "
-                    "Use the `spotify_template` option instead.",
-                ),
-                level="error",
-            )
-        return settings
-
-    def wait(self):
-        """
-        Wait before retrieving information from DBus after an update.
-
-        Dbus can take some time to return the latest updated state,
-        after a modification.
-        """
-        time.sleep(self.settings.wait_time)
 
     @cached_property
     def handlers(self):
@@ -125,139 +30,209 @@ class SpotifyNvimPlugin:
             "pause": (partial(self._spotify_method, event="pause"), False),
             "stop": (partial(self._spotify_method, event="stop"), False),
             "show": (
-                partial(self._spotify_method, event="show_window", show_status=False),
+                partial(self._spotify_method, event="show_window"),
                 False,
             ),
-            "status": (self._handle_status, False),
             "volume": (self._handle_volume, True),
             "shuffle": (self._handle_shuffle, True),
             "time": (self._handle_time, True),
         }
 
-    def _spotify_method(self, event, show_status=True):
+    def _spotify_method(self, event):
         spotify = Spotify()
         getattr(spotify, event)()
-        if show_status and self.settings.show_status:
-            self.wait()
-            self._show_current_status(spotify=spotify)
-
-    def _handle_status(self):
-        spotify = Spotify()
-        self._show_current_status(spotify=spotify)
+        return True
 
     def _handle_volume(self, value=None):
         spotify = Spotify()
         if value:
-            spotify.volume = value
-            self.wait()
-        self._show_current_status(spotify)
+            spotify.volume = str(value)
+        return spotify.volume
 
     def _handle_time(self, value=None):
         spotify = Spotify()
         if value:
-            spotify.time = value
-            self.wait()
-        self._show_current_status(spotify)
+            spotify.time = str(value)
+        return spotify.time
 
     def _handle_shuffle(self, value=None):
         spotify = Spotify()
         yes_values = ("yes", "on", "true")
         no_values = ("no", "off", "false")
-        if value:
-            if value in yes_values:
+        if value == "toggle":
+            value = not spotify.shuffle
+        if value is not None:
+            if value in yes_values or value is True:
                 spotify.shuffle = True
-            elif value in no_values:
+            elif value in no_values or value is False:
                 spotify.shuffle = False
             else:
-                valid_options = ", ".join(yes_values) + ", " + ", ".join(no_values)
+                valid_options = (
+                    ", ".join(yes_values) + ", " + ", ".join(no_values) + ", toggle"
+                )
                 self.notify(
                     f"Invalid option. Valid options are: {valid_options}.",
                     level="error",
                 )
                 return
-            self.wait()
 
-        self._show_current_status(spotify)
+        return spotify.shuffle
 
-    def _get_volume_symbol(self, volume):
+    def _get_volume_state(self, volume):
         if volume == 0:
-            status = "volume.muted"
-        elif volume < 50:
-            status = "volume.low"
-        elif volume < 75:
-            status = "volume.medium"
-        else:
-            status = "volume.high"
-        return self.get_symbol(status)
+            return "muted"
+        if volume < 50:
+            return "low"
+        if volume < 75:
+            return "medium"
+        return "high"
 
-    def _get_progress_bar(self, percent=0, length=35):
+    def _get_volume_context(self, volume, config: NotificationConfig):
+        symbols = config.symbols.volume
+        states = config.states.volume
+        state = self._get_volume_state(volume)
+        return VolumeContext(
+            symbol=getattr(symbols, state),
+            state=getattr(states, state),
+            value=volume,
+        )
+
+    def _get_time_context(self, current_time, duration):
+        return TimeContext(
+            current=self._format_seconds(current_time),
+            duration=self._format_seconds(duration),
+        )
+
+    def _get_progress_bar(self, config: ProgressbarConfig, percent=0):
+        length = config.width
         middle = int(length * percent)
-        bar = self.get_symbol("progress.complete") * (middle - 1)
-        bar += self.get_symbol("progress.mark")
-        bar += self.get_symbol("progress.missing") * (length - middle)
+        bar = config.filled * middle
+        bar += config.marker
+        bar += config.remaining * (length - middle - 1)
         return bar
 
     def _format_seconds(self, seconds):
         minutes, seconds = divmod(seconds, 60)
         return f"{minutes:=02}:{seconds:=02}"
 
-    def _get_shuffle_symbol(self, shuffle):
-        state = "shuffle.enabled" if shuffle else "shuffle.disabled"
-        return self.get_symbol(state)
+    def _get_album_context(self, meta):
+        return AlbumContext(
+            name=meta["album.name"],
+            # name="We are not your kind",
+            artists=", ".join(meta["album.artists"]),
+        )
 
-    def _show_current_status(self, spotify: Spotify):
-        width = self.settings.width
+    def _get_shuffle_context(self, shuffle, config: NotificationConfig):
+        symbols = config.symbols.shuffle
+        states = config.states.shuffle
+        return ShuffleContext(
+            symbol=symbols.enabled if shuffle else symbols.disabled,
+            state=states.enabled if shuffle else states.disabled,
+        )
+
+    def _get_playback_context(self, state, config: NotificationConfig):
+        states = config.states.playback
+        symbols = config.symbols.playback
+        return PlaybackContext(
+            symbol=getattr(symbols, state),
+            state=getattr(states, state),
+        )
+
+    def _render_current_status(
+        self, spotify: Spotify, config: NotificationConfig, cycle: int = 0
+    ):
         meta = spotify.metadata()
-
         context = {
             "title": meta["title"],
             "artists": ", ".join(meta["artists"]),
-            "album_name": meta["album.name"],
-            "album_artists": meta["album.artists"],
-            "shuffle_symbol": self._get_shuffle_symbol(spotify.shuffle),
+            "album": self._get_album_context(meta),
+            "shuffle": self._get_shuffle_context(spotify.shuffle, config),
+            "playback": self._get_playback_context(spotify.status, config),
+            "volume": self._get_volume_context(spotify.volume, config),
         }
 
-        status = spotify.status
-        context["status"] = status
-        context["status_symbol"] = self.get_symbol(status)
-
-        volume = int(spotify.volume)
-        context["volume"] = volume
-        context["volume_symbol"] = self._get_volume_symbol(volume)
-
         current_time = spotify.time
-        total_length = spotify.length
-        context["time"] = self._format_seconds(current_time)
-        context["length"] = self._format_seconds(total_length)
-        context["progress_bar"] = self._get_progress_bar(
-            percent=current_time / total_length,
-            length=self.settings.progress_bar_width,
+        duration = spotify.length
+        context["time"] = self._get_time_context(current_time, duration)
+        context["progressbar"] = self._get_progress_bar(
+            config=config.progressbar,
+            percent=current_time / duration,
         )
 
         result = []
-        for block in self.settings.template:
-            if isinstance(block, dict):
-                text = self._render(block=block, width=width, context=context)
-            else:
-                block_width = width // len(block)
-                line = [
-                    self._render(block=subblock, width=block_width, context=context)
-                    for subblock in block
-                ]
-                text = "".join(line)
-            result.append(text)
-        self.notify("\n".join(result))
+        for blocks in config.template:
+            if not blocks:
+                result.append("")
+                continue
 
-    def _render(self, block, context, width):
-        template = block.get("template", "")
-        text = template.format(**context)
-        if block.get("shorten") and len(text) > width:
-            text = text[: width - 3] + "..."
-        align = block.get("align")
+            line = []
+            blocks_with_fixed_width = [block for block in blocks if block.width]
+            fixed_width = sum(block.width for block in blocks_with_fixed_width)
+            default_block_width = (config.width - fixed_width) // (
+                len(blocks) - len(blocks_with_fixed_width)
+            )
+            for block in blocks:
+                block_width = block.width or default_block_width
+                line.append(
+                    self._render(
+                        block=block,
+                        width=block_width,
+                        context=context,
+                        cycle=cycle,
+                        initial_cycle_pause=config.initial_cycle_pause,
+                    )
+                )
+            text = "".join(line)
+            result.append(text)
+
+        return "\n".join(result)
+
+    def _render(
+        self,
+        block: TemplateItem,
+        context: dict,
+        width: int,
+        cycle: int = 0,
+        initial_cycle_pause: int = 0,
+    ):
+        pause = initial_cycle_pause
+        content = block.content
+        text = content.format(**context)
+        text_len = len(text)
+        tail = "..."
+        if block.shorten and text_len > width:
+            # The cycle can go from the start of the text to the end, minus the width of the block,
+            # since we don't want to continue the cycle after the whole text has been shown.
+            max_index_to_cycle = text_len - width
+            # We add the pause twice to account for the pause at the start and at the end.
+            # Plus one, so we can go up to the last index.
+            max_cycle = max_index_to_cycle + pause * 2 + 1
+            cycle = cycle % max_cycle
+            if cycle <= pause:
+                cycle = 0
+            else:
+                cycle -= pause
+
+            if cycle > max_index_to_cycle:
+                cycle = max_index_to_cycle
+
+            start = cycle
+            end = start + width
+            text = text[start:end]
+            rest = text_len - end
+            # TODO: This makes the tail to just appear,
+            # figure out a nicer transition.
+            if rest > 0:
+                rest = min(rest, len(tail))
+                text = text[:-rest] + tail[:rest]
+
+        align = block.align
         if align == "center":
             return text.center(width)
         elif align == "left":
             return text.ljust(width)
+        elif align == "right":
+            return text.rjust(width)
         return text
 
     @cached_property
@@ -268,40 +243,60 @@ class SpotifyNvimPlugin:
         level = self.loglevels[level.upper()]
         self.nvim.api.notify(msg, level, {"title": "Spotify"})
 
-    def get_symbol(self, symbol, default=""):
-        return self.settings.symbols.get(symbol, default)
+    def get_symbol(self, symbol, symbols, default=""):
+        return symbols.get(symbol, default)
 
-    def error(self, msg):
-        self.nvim.err_write(f"[spotify] {msg}\n")
+    @pynvim.function("SpotifyMetadata", sync=True)
+    def get_spotify_metadata(self, args):
+        spotify = Spotify()
+        result = {
+            "volume": spotify.volume,
+            "shuffle": spotify.shuffle,
+            "length": spotify.length,
+            "time": spotify.time,  # Current time
+            "status": spotify.status,
+            "metadata": spotify.metadata(),
+        }
+        return result
 
-    def print(self, msg):
-        self.nvim.out_write(f"[spotify] {msg}\n")
+    @pynvim.function("SpotifyRenderStatus", sync=True)
+    def get_rendered_status(self, args):
+        """
+        Get the rendered status.
 
-    @pynvim.command(
-        "Spotify",
-        nargs="+",
-        complete="customlist,SpotifyCompletions",
-    )
-    def spotify_command(self, args):
+        The first argument indicates the current cycle of the rendered content,
+        the second argument is the plugin config.
+        """
+        if len(args) != 2:
+            self.notify(
+                msg="Two arguments are required: cycle and config",
+                level="error",
+            )
+        cycle = args[0]
+        config = NotificationConfig.from_dict(args[1])
+
+        try:
+            spotify = Spotify()
+            status = self._render_current_status(spotify, cycle=cycle, config=config)
+            return True, status
+        except SpotifyError as e:
+            return False, str(e)
+
+    @pynvim.function("SpotifyAction", sync=True)
+    def execute_action(self, args):
+        """
+        The fist argument is the name of the action.
+        If the action takes a value, the second argument is the value.
+        """
         try:
             attr = self.handlers.get(args[0])
             if not attr:
-                self.error("Invalid option")
-                return
-
+                raise ValueError(f"Invalid action `{args[0]}`.")
             func, accept_args = attr
             if accept_args and len(args) > 1:
-                func(args[1])
+                return func(args[1])
             else:
-                func()
+                return func()
         except SpotifyError as e:
-            self.error(str(e))
-
-    @pynvim.function("SpotifyCompletions", sync=True)
-    def spotify_completions(self, args):
-        arglead, cmdline, cursorpos, *_ = args
-        return [
-            option
-            for option in self.handlers
-            if option.lower().startswith(arglead.lower())
-        ]
+            self.notify(msg=str(e), level="error")
+            return False
