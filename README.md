@@ -71,7 +71,7 @@ Install using [lazy.nvim](https://github.com/folke/lazy.nvim):
 ```lua
 require("spotify").setup({
   -- Whether to show status after an action is executed using the :Spotify command.
-  show_status_after_action = true,
+  notify_after_action = true,
   defaults = {
     -- The numeric value that represents each -/+ volume increment.
     volume_increment = 5,

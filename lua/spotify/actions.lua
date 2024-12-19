@@ -35,7 +35,7 @@ function M.execute(action, value)
   -- This way we can just skip showing the status.
   -- Maybe all commands return the error message as well?
   local result = item[1](value)
-  if result ~= vim.NIL and item[2] and config.show_status_after_action then
+  if result ~= vim.NIL and item[2] and config.notify_after_action then
     notification.show()
   end
 end

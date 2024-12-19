@@ -220,26 +220,12 @@ class SpotifyNvimPlugin:
             end = start + width
             text = text[start:end]
             rest = text_len - end
+            # TODO: This makes the tail to just appear,
+            # figure out a nicer transition.
             if rest > 0:
-                # self.nvim.out_write(f"missing: {rest} / {text[-1]}\n")
-                rest = min(rest, 3)
-                # TODO: fix this
+                rest = min(rest, len(tail))
                 text = text[:-rest] + tail[:rest]
-                # tail_len = 1
-                # text = text[:-tail_len] + tail[:tail_len]
 
-            # if end <= text_len:
-            #     # text = text[:-3] + "..."
-            #     tail_len = 3
-            #     text = text[:-tail_len] + tail[:tail_len]
-            # tail_len = min(text_len - end, len(tail))
-            # if tail_len > 0:
-            #     # text = text[:-1] + "."
-            #     # self.nvim.out_write(f"text_len: {text_len}\n")
-            #     # self.nvim.out_write(f"end: {end}\n")
-            #     # self.nvim.out_write(f"tail_len: {text_len}\n")
-            #     # text = text[: -tail_len] + tail[:tail_len]
-            #     text = text[:end - tail_len] + tail[:tail_len]
         align = block.align
         if align == "center":
             return text.center(width)
