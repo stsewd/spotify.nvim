@@ -13,17 +13,31 @@ Control Spotify from Neovim.
 - [pydbus](https://github.com/LEW21/pydbus) (see [requirements](https://github.com/LEW21/pydbus#requirements)).
   - If you are using pyenv to manage your Python provider, make sure you use:
     `pyenv virtualenv --system-site-packages system neovim` to create it.
+  - If you are using uv, use: `uv venv --python-preference system --system-site-packages`.
 - [wmctrl](https://en.wikipedia.org/wiki/Wmctrl) (optional, required only for the `show` command)
     - `sudo apt-get install wmctrl`
     - `sudo dnf install wmctrl`
 
 ## Installation
 
-Install using [vim-plug](https://github.com/junegunn/vim-plug).
-Put this on your `init.vim`.
+Install using [lazy.nvim](https://github.com/folke/lazy.nvim):
 
-```vim
-Plug 'stsewd/spotify.nvim', { 'do': ':UpdateRemotePlugins' }
+```lua
+{
+  "stsewd/spotify.nvim",
+  build = ":UpdateRemotePlugins",
+  config = function()
+    require("spotify").setup()
+  end,
+  init = function()
+    -- Optional mappings.
+    vim.keymap.set("n", "<leader>ss", ":Spotify play/pause<CR>", { silent = true })
+    vim.keymap.set("n", "<leader>sj", ":Spotify next<CR>", { silent = true })
+    vim.keymap.set("n", "<leader>sk", ":Spotify prev<CR>", { silent = true })
+    vim.keymap.set("n", "<leader>so", ":Spotify show<CR>", { silent = true })
+    vim.keymap.set("n", "<leader>sc", ":Spotify status<CR>", { silent = true })
+  end,
+},
 ```
 
 ## Usage
@@ -42,145 +56,179 @@ Plug 'stsewd/spotify.nvim', { 'do': ':UpdateRemotePlugins' }
      The value is a number from 0 to 100,
      you can prefix the value with `+` or `-`
      to change the volume relatively to the current value.
+     You can repeat `-`/`+` to change the volume by increments of 5.
   - `time [value]`: Set the time of the current song to `value`.
      The value is given in seconds,
      you can prefix the value with `+` or `-`
      to change the time relatively to the current value.
+     You can repeat `-`/`+` to change the time by increments of 5.
   - `shuffle [value]`: De/activate shuffle.
-     The value can be `on` or `off`,
+     The value can be: `on`, `off`, `toggle`.
+     If no value is given, it will default to `toggle`.
 
 ## Configuration
 
-### Show the player status after each command
-
-```vim
-g:spotify_show_status = 1
-```
-
-### Symbols used in the player status
-
-See [below for inspiration](#inspiration-for-symbols).
-
-```vim
-let g:spotify_symbols = {
-    \ "playing": "▶",
-    \ "paused": "⏸",
-    \ "stopped": "■",
-    \ "volume.high": "🔊",
-    \ "volume.medium": "🔉",
-    \ "volume.low":  "🔈",
-    \ "volume.muted": "🔇",
-    \ "shuffle.enabled": "⤮ on",
-    \ "shuffle.disabled": "⤮ off",
-    \ "progress.mark": "●",
-    \ "progress.complete": "─",
-    \ "progress.missing": "┈",
-    \}
-```
-
-### Template of the player status
-
-The template is given by a list,
-where each element represents a line.
-And each element can be a template block or a list of of template blocks.
-
-A template block is a dictionary with the folloing options:
-
-- `template`: A string that would be evaluated using the `.format()` Python method.
-- `align`: Alignment of the template, can be empty, left or center.
-- `shorten`: A boolean value, if it's `true` and the evaluated template is larger than `width`,
-  the value will be truncated.
-
-The variables you can use inside a template are:
-
-- `status`: the current status (playing, paused, stopped).
-- `status_symbol`: the symbol from `spotify_symbols`.
-- `title`: the title of the song.
-- `artists`: comma separated artists.
-- `album_name`: the name of the album.
-- `album_artists`: comma separated artists.
-- `shuffle_symbol`: the symbol from `spotify_symbols`.
-- `volume`: the current volume level (0 to 100).
-- `volume_symbol`: the symbol from `spotify_symbols`.
-- `time`: the current time of the song in mm:ss format.
-- `length`: the length of the song in mm:ss format.
-- `progress_bar`: progress bar.
-
-```vim
-let g:spotify_template = [
-   \   {
-   \       "template": " 🎶 {title}",
-   \       "shorten": v:true,
-   \   },
-   \   {
-   \       "template": " 🎨 {artists}",
-   \       "shorten": v:true,
-   \   },
-   \   {
-   \       "template": " 💿 {album_name}",
-   \       "shorten": v:true,
-   \   },
-   \   {},
-   \   [
-   \           {
-   \               "template": "  {shuffle_symbol}",
-   \               "align": "center",
-   \           },
-   \           {
-   \               "template": "{status_symbol}",
-   \               "align": "center",
-   \           },
-   \           {
-   \               "template": "{volume_symbol} {volume}%  ",
-   \               "align": "center",
-   \           }
-   \   ],
-   \   {},
-   \   {
-   \       "template": "{time} / {length}",
-   \       "align": "center",
-   \   },
-   \   {
-   \       "template": "{progress_bar}",
-   \       "align": "center",
-   \   }
-   \]
-```
-
-### Status width
-
-Used when rendering the template from `spotify_template`.
-
-```vim
-g:spotify_width = 34
-```
-
-### Progress bar width
-
-The width of the progress bar used when rendering the template from `spotify_template`.
-
-```vim
-g:spotify_progress_bar_width = 32
-```
-
-### Wait time
-
-Time in milliseconds to wait to show the player status after each command.
-
-_This is needed, since DBus/Spotify takes some time applying a change_.
-
-```vim
-g:spotify_wait_time = 0.2
-```
-
-## Mappings example
-
-```vim
-nmap <leader>ss <Plug>(spotify-play/pause)
-nmap <leader>sj <Plug>(spotify-next)
-nmap <leader>sk <Plug>(spotify-prev)
-nmap <leader>so <Plug>(spotify-show)
-nmap <leader>sc <Plug>(spotify-status)
+```lua
+require("spotify").setup({
+  -- Whether to show status after an action is executed using the :Spotify command.
+  show_status_after_action = true,
+  defaults = {
+    -- The numeric value that represents each -/+ volume increment.
+    volume_increment = 5,
+    -- The numeric value that represents each -/+ time increment.
+    time_increment = 5,
+    -- The default action to take when :Spotify shuffle is called.
+    shuffle = "toggle",
+  },
+  notification = {
+    -- The notification backend to use. Can be "builtin", "notify", "snacks", or "auto".
+    backend = "auto",
+    -- Extra options to pass to the vim.notify function.
+    extra_opts = {},
+    -- The inverval that the notification will be updated (in milliseconds).
+    refresh_interval = 100,
+    -- How many refresh intervals to cycle through the text that doesn't fit in the notification.
+    cycle_speed = 2,
+    -- How many refresh intervals to wait before cycling through the text that doesn't fit in the notification.
+    initial_cycle_pause = 5,
+    -- The timeout for the notification (in milliseconds).
+    timeout = 4000,
+    -- The width of text in the notification.
+    width = 44,
+    -- A template to format the notification text.
+    -- The template is a list of lists of tables, where each table represents a line of text,
+    -- and each line is a list of tables, where each table represents a block of text.
+    -- Each block of text can have the following keys:
+    --  - content: The text to display.
+    --  - width: The width of the block of text, if not specified, the width will be calculated based on the width of the whole line.
+    --  - shorten: Whether to truncate the text if it doesn't fit in the block, the text will cycle on each refresh interval.
+    --  - align: The alignment of the text in the block, can be "left", "center", or "right".
+    --
+    --  The content can have the following placeholders:
+    --  - {title}: The title of the current track.
+    --  - {artists}: The artists of the current track separated by commas.
+    --  - {album.name}: The name of the album of the current track.
+    --  - {album.artists}: The artists of the album of the current track separated by commas.
+    --  - {shuffle.symbol}: The symbol for the shuffle state (as given in the symbols.shuffle table).
+    --  - {shuffle.state}: The state of the shuffle (as given in the states.shuffle table).
+    --  - {playback.symbol}: The symbol for the playback state (as given in the symbols.playback table).
+    --  - {playback.state}: The state of the playback (as given in the states.playback table).
+    --  - {volume.symbol}: The symbol for the volume state (as given in the symbols.volume table).
+    --  - {volume.state}: The state of the volume (as given in the states.volume table).
+    --  - {volume.value}: The value of the volume (from 0 to 100).
+    --  - {time.current}: The current time of the track in the format "mm:ss".
+    --  - {time.duration}: The duration of the track in the format "mm:ss".
+    --  - {progressbar}: A progress bar that represents the current time of the track (as given in the progressbar table).
+    template = {
+      {
+        {
+          content = "🎶",
+          width = 2,
+        },
+        {
+          content = "{title}",
+          shorten = true,
+        },
+      },
+      {
+        {
+          content = "👥",
+          width = 2,
+        },
+        {
+          content = "{artists}",
+          shorten = true,
+        },
+      },
+      {
+        {
+          content = "💿",
+          width = 2,
+        },
+        {
+          content = "{album.name}",
+          shorten = true,
+        },
+      },
+      {},
+      {
+        {
+          content = "",
+          width = 5,
+        },
+        {
+          content = "{shuffle.symbol} {shuffle.state}",
+          align = "left",
+        },
+        {
+          content = "{playback.symbol}",
+          align = "center",
+        },
+        {
+          content = "{volume.symbol} {volume.value}%",
+          align = "right",
+        },
+        {
+          content = "",
+          width = 5,
+        },
+      },
+      {},
+      {
+        {
+          content = "{time.current} / {time.duration}",
+          align = "center",
+        },
+      },
+      {
+        {
+          content = "{progressbar}",
+          align = "center",
+        },
+      },
+    },
+    symbols = {
+      playback = {
+        playing = "▶",
+        paused = "⏸",
+        stopped = "■",
+      },
+      shuffle = {
+        enabled = "🔀",
+        disabled = "⤭",
+      },
+      volume = {
+        muted = "🔇",
+        low = "🔈",
+        medium = "🔉",
+        high = "🔊",
+      },
+    },
+    states = {
+      playback = {
+        playing = "playing",
+        paused = "paused",
+        stopped = "stopped",
+      },
+      shuffle = {
+        enabled = "on",
+        disabled = "off",
+      },
+      volume = {
+        muted = "muted",
+        low = "low",
+        medium = "medium",
+        high = "high",
+      },
+    },
+    progressbar = {
+      marker = "●",
+      filled = "─",
+      remaining = "┈",
+      width = 40,
+    },
+  },
+})
 ```
 
 ## Inspiration for symbols
@@ -189,7 +237,7 @@ nmap <leader>sc <Plug>(spotify-status)
 - paused: ⏸ ⏸️
 - stopped: ■ ⏹️
 - album: 💿︎💿
-- artist: © 🎨
+- artist: © 🎨 👥
 - music: ♫♪ 🎶
 - volume: ∅ 🕨 🕩 🕪  🔇 🔈 🔉 🔊
 - shuffle: ⤮ 🔀
