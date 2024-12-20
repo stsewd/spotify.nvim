@@ -5,7 +5,7 @@ Control Spotify from Neovim.
 ![1](https://github.com/user-attachments/assets/e8298d39-78f8-4c49-a73b-7e6ffae5f936)
 ![2](https://github.com/user-attachments/assets/02973f67-f35c-4582-b489-1b206fb61aac)
 
-*Showing status using [snacks.nvim's notifier](https://github.com/folke/snacks.nvim/blob/main/docs/notifier.md)*
+_Showing status using [snacks.nvim's notifier](https://github.com/folke/snacks.nvim/blob/main/docs/notifier.md)_
 
 ## Requirements
 
@@ -15,8 +15,8 @@ Control Spotify from Neovim.
     `pyenv virtualenv --system-site-packages system neovim` to create it.
   - If you are using uv, use: `uv venv --python-preference system --system-site-packages`.
 - [wmctrl](https://en.wikipedia.org/wiki/Wmctrl) (optional, required only for the `show` command)
-    - `sudo apt-get install wmctrl`
-    - `sudo dnf install wmctrl`
+  - `sudo apt-get install wmctrl`
+  - `sudo dnf install wmctrl`
 - [nvim-notify](https://github.com/rcarriga/nvim-notify) or [snacks.nvim's notifier](https://github.com/folke/snacks.nvim/blob/main/docs/notifier.md)
   for fancy asynchronous notifications.
 
@@ -55,18 +55,18 @@ Install using [lazy.nvim](https://github.com/folke/lazy.nvim):
   - `show`: Focus Spotify window
   - `status`: Show current song and player status
   - `volume [value]`: Set the volume to `value`.
-     The value is a number from 0 to 100,
-     you can prefix the value with `+` or `-`
-     to change the volume relatively to the current value.
-     You can repeat `-`/`+` to change the volume by increments of 5.
+    The value is a number from 0 to 100,
+    you can prefix the value with `+` or `-`
+    to change the volume relatively to the current value.
+    You can repeat `-`/`+` to change the volume by increments of 5.
   - `time [value]`: Set the time of the current song to `value`.
-     The value is given in seconds,
-     you can prefix the value with `+` or `-`
-     to change the time relatively to the current value.
-     You can repeat `-`/`+` to change the time by increments of 5.
+    The value is given in seconds,
+    you can prefix the value with `+` or `-`
+    to change the time relatively to the current value.
+    You can repeat `-`/`+` to change the time by increments of 5.
   - `shuffle [value]`: De/activate shuffle.
-     The value can be: `on`, `off`, `toggle`.
-     If no value is given, it will default to `toggle`.
+    The value can be: `on`, `off`, `toggle`.
+    If no value is given, it will default to `toggle`.
 
 ## Configuration
 
@@ -233,6 +233,35 @@ require("spotify").setup({
 })
 ```
 
+## Configuration examples
+
+### Put the Spotify logo in the notification
+
+This requires a [nerd font](https://www.nerdfonts.com/) to be installed.
+
+```lua
+require("spotify").setup(
+  notification = {
+    extra_opts = {
+      icon = "",
+    },
+  },
+)
+```
+
+### Make the notification less wider
+
+```lua
+require("spotify").setup(
+  notification = {
+    width = 34,
+    progressbar = {
+      width = 30,
+    },
+  },
+)
+```
+
 ## Inspiration for symbols
 
 - playing: ▶ ▶️
@@ -241,7 +270,7 @@ require("spotify").setup({
 - album: 💿︎💿
 - artist: © 🎨 👥
 - music: ♫♪ 🎶
-- volume: ∅ 🕨 🕩 🕪  🔇 🔈 🔉 🔊
+- volume: ∅ 🕨 🕩 🕪 🔇 🔈 🔉 🔊
 - shuffle: ⤮ 🔀
 
 ## References
