@@ -118,7 +118,6 @@ class SpotifyNvimPlugin:
     def _get_album_context(self, meta):
         return AlbumContext(
             name=meta["album.name"],
-            # name="We are not your kind",
             artists=", ".join(meta["album.artists"]),
         )
 
@@ -253,7 +252,7 @@ class SpotifyNvimPlugin:
             "volume": spotify.volume,
             "shuffle": spotify.shuffle,
             "length": spotify.length,
-            "time": spotify.time,  # Current time
+            "time": spotify.time,
             "status": spotify.status,
             "metadata": spotify.metadata(),
         }

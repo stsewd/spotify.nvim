@@ -2,10 +2,10 @@
 
 Control Spotify from Neovim.
 
-![1](https://user-images.githubusercontent.com/4975310/184558071-58685fed-4fba-459b-a0fd-061981c1ea34.png)
-![2](https://user-images.githubusercontent.com/4975310/184558074-bbd5ebd9-39c6-4b69-a579-7d7f28f44f7d.png)
+![1](https://github.com/user-attachments/assets/e8298d39-78f8-4c49-a73b-7e6ffae5f936)
+![2](https://github.com/user-attachments/assets/02973f67-f35c-4582-b489-1b206fb61aac)
 
-*Showing status using [nvim-notify](https://github.com/rcarriga/nvim-notify)*
+*Showing status using [snacks.nvim's notifier](https://github.com/folke/snacks.nvim/blob/main/docs/notifier.md)*
 
 ## Requirements
 
